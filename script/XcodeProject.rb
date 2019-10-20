@@ -145,7 +145,6 @@ module XcodeProject
   end
 
   def XcodeProject.edit_target(target, update_info)
-    
   end
 
   # create_target method do follow things for you
@@ -323,62 +322,11 @@ module XcodeProject
   end
 
   # allow you to edit project's config, such as http address, project version, build version, etc.
-  def XcodeProject.edit_target(project_path, target_name, configuration)
-    xcodeproj_path = xcodeproj_file(project_path)
-    project = Xcodeproj::Project.open(xcodeproj_path)
+  def XcodeProject.edit_project(project_path, target_name, configuration)
+    project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     target = project.targets.find { |item| item.name == target_name }
-
     raise "[Script] target #{target_name} not exist" unless target
-
-    # plist
-    puts 'begin edit plist file'
-    build_settings = target.build_settings("Distribution")
-    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
-    plist = Plist.parse_xml(plist_path)
-    if configuration["CFBundleDisplayName"]
-      plist["CFBundleDisplayName"] = configuration["CFBundleDisplayName"]
-    end
-    if configuration["CFBundleShortVersionString"]
-      plist["CFBundleShortVersionString"] = configuration["CFBundleShortVersionString"]
-    end
-    if configuration["CFBundleVersion"]
-      plist["CFBundleVersion"] = configuration["CFBundleVersion"]
-    end
-    IO.write(plist_path, plist.to_plist)
-
-    private_group = File.join(project_path, 'Butler', configuration["privateGroup"])
-    # header file
-    puts 'begin edit header file'
-    headfile_name = Dir.entries(private_group).find { |f| f.index('.h') }
-    headfile_path = File.join(private_group, headfile_name)
-    raise "#{headfile_path} not exist" unless File.exist? headfile_path
-    headfile = HeadFile.load(headfile_path)
-    distribution_config = headfile["DISTRIBUTION"]
-    distribution_config.map { |key,value|
-      if configuration[key]
-        distribution_config[key] = configuration[key]
-      end
-    }
-    HeadFile.dump(headfile_path, headfile)
-
-    # image
-    puts 'begin handle image files'
-    images = configuration["images"]
-    if images
-      assets_name = Dir.entries(private_group).find { |f| f.index('.xcassets') }
-      assets_path = File.join(private_group, assets_name)
-      images.map { |key, value|
-        if key == "AppIcon"
-          ImageAsset.new_icon(value, assets_path)
-        elsif key == "LaunchImage"
-          ImageAsset.new_launch(value, assets_path)
-        else
-          ImageAsset.add_imageset(key, value, assets_path)
-        end
-      }
-    end
-
-    puts 'edit project complete'
+    
   end
 
   # fetch target info from project

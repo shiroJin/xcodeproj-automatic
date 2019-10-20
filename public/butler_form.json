@@ -1,0 +1,30 @@
+{
+  "tag": "",
+  "PRODUCT_BUNDLE_IDENTIFIER": "",
+  "CFBundleDisplayName": "", 
+  "CFBundleShortVersionString": "", 
+  "CFBundleVersion": "", 
+  "kAPISalt": "", 
+  "kAPIVersion": "", 
+  "kCompanyCode": "", 
+  "kDistributioneBaseCommonUrl": "", 
+  "kIDCardScanDevcode": "", 
+  "kJPushAppKeyString": "", 
+  "kJPushChannelID": "", 
+  "kMobiletype": "", 
+  "kPlateNumberScanDevcode": "", 
+  "kTencentQQAppId": "", 
+  "kTencentQQAppKey": "", 
+  "kUMengAppKeyString": "", 
+  "kUMengChannelID": "", 
+  "kVersionCheckType": "", 
+  "kWechatAppId": "", 
+  "kWechatAppKey": "",
+  "images": {
+    "AppIcon": [], 
+    "LaunchImage": []
+  },
+  "files": {
+    "wtproject.lsc" : ""
+  }
+}
