@@ -1,0 +1,16 @@
+#ifndef SCAppConfigFor{{ app.DISTRIBUTION.kCompanyCode | upcase }}Butler_h
+#define SCAppConfigFor{{ app.DISTRIBUTION.kCompanyCode | upcase }}Butler_h
+{% if app.DEBUG %}
+#ifdef DEBUG
+{% for item in app.DEBUG %}static NSString * const {{ item[0] }}{% assign space = ' ' %}{% assign count = 36 |minus: item[0].size %}{% for i in (1..count) %}{{ space }}{% endfor %}= @"{{ item[1] }}";
+{% endfor %}#endif{% endif %}
+{% if app.RELEASE %}
+#ifdef RELEASE
+{% for item in app.RELEASE %}static NSString * const {{ item[0] }}{% assign space = ' ' %}{% assign count = 36 |minus: item[0].size %}{% for i in (1..count) %}{{ space }}{% endfor %}= @"{{ item[1] }}";
+{% endfor %}#endif{% endif %}
+{% if app.DISTRIBUTION %}
+#ifdef DISTRIBUTION
+{% for item in app.DISTRIBUTION %}static NSString * const {{ item[0] }}{% assign space = ' ' %}{% assign count = 36 |minus: item[0].size %}{% for i in (1..count) %}{{ space }}{% endfor %}= @"{{ item[1] }}";
+{% endfor %}#endif
+{% endif %}
+#endif /* SCAppConfigForRemainButler_h */
