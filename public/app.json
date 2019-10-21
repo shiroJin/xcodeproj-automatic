@@ -4,7 +4,9 @@
     "code" : "mh",
     "targetName" : "ButlerForRemain",
     "branchName" : "script",
-    "privateGroup" : "ButlerForRemain"
+    "privateGroup" : "Butler/ButlerForRemain",
+    "assets" : "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
+    "headfile" : "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
   },
   {
     "displayName" : "园区管理",

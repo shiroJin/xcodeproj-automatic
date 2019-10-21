@@ -4,6 +4,7 @@ require 'plist'
 require 'fileutils'
 require_relative './HeadFile'
 require_relative './ImageAsset'
+require_relative './app'
 
 module XcodeProject
   # return xcodeproj file name in directory
@@ -39,7 +40,7 @@ module XcodeProject
   end
 
   # create template target and private files
-  def XcodeProject.create_target_template(project, target_name, company_code, src_name='ButlerForRemain')
+  def XcodeProject.create_target_template(project, target_name, company_code, src_name)
     target = project.targets.find { |item| item.name == target_name }
     raise "❗target already existed" if target
 
@@ -144,84 +145,17 @@ module XcodeProject
     return target
   end
 
-  def XcodeProject.edit_target(target, update_info)
-  end
-
-  # create_target method do follow things for you
-  # 1. create target from template
-  # 2. copy build phase and build setttins from template, igonre template's private build files, 
-  #    in addition, method will add a target's pre-preocess macro 
-  # 3. make directory for new target, create plist file and headerfile which contains project's 
-  #    configs, such as http address, jpush key, umeng key and etc. In addition, create imagset.
-  # 4. edit Podfile file
-  def XcodeProject.new_target(project_path, target_name, configuration, template_name="ButlerForRemain")
-    code = configuration['kCompanyCode']
-    xcodeproj_path = xcodeproj_file(project_path)
-    project = Xcodeproj::Project.open(xcodeproj_path)
-    target = project.targets.find { |item| item.name == target_name }
-    raise '[Script] target already exist' if target
-
-    # make native target
-    puts '[Scirpt] create native target'
-    src_target = project.targets.find { |item| item.name == template_name }
-    target = project.new_target(src_target.symbol_type, target_name, src_target.platform_name, src_target.deployment_target)
-    target.product_name = target_name
-
-    # copy build source from template
-    puts '[Scirpt] copy build phase'
-    src_target.build_phases.each do |src|
-      klass = src.class
-      dest = target.build_phases.find { |phase| phase.instance_of? klass }
-      unless dest
-        dest ||= project.new(klass)
-        target.build_phases << dest
-      end
-      dest.files.map { |item| item.remove_from_project }
-      
-      src.files.each do |file|
-        # 过滤私有文件
-        if file.file_ref.hierarchy_path.index("/Butler/ButlerForRemain")
-          puts '-------- ignore ' + file.display_name
-          next
-        end
-        if dest.instance_of? Xcodeproj::Project::Object::PBXFrameworksBuildPhase
-          if file.display_name.index('libPods-CommonPods')
-            puts '-------- ignore ' + file.display_name
-            next
-          end
-        end
-        dest.add_file_reference(file.file_ref, true)
-      end
-    end
-
-    # copy build settings from source target
-    puts '[Scirpt] copy build setting'
-    src_target.build_configurations.each do |config|
-      dest_config = target.build_configurations.find { |dest| dest.name == config.name }
-      dest_config.build_settings.update(config.build_settings)
-    end
-
-    # group
-    puts '[Scirpt] create private files'
-    target_group_path = "#{project_path}/Butler/ButlerFor#{code.capitalize}"
-    Dir.mkdir(target_group_path) unless File.exist? target_group_path
-    group = project.main_group.find_subpath("Butler").new_group(nil, "ButlerFor#{code.capitalize}")
-
-    pending_files = Array.new
-
+  def XcodeProject.edit_target(project, app, update_info)
+    target = project.targets.find { |item| item.name == app.target_name }
     # image resource
-    puts '[Script] copy image resource'
-    icon_paths = configuration["images"]["AppIcon"]
-    launch_paths = configuration["images"]["LaunchImage"]
-    top_asset = "ImagesFor#{code.capitalize}.xcassets"
-    top_assets_path = File.join(target_group_path, top_asset)
-    ImageAsset.new_assets_group(top_assets_path)
-    ImageAsset.new_icon(icon_paths, top_assets_path)
-    ImageAsset.new_launch(launch_paths, top_assets_path)
-    pending_files << top_asset
+    assets_path = app.assets
+    icon_paths = update_info["images"]["AppIcon"]
+    launch_paths = update_info["images"]["LaunchImage"]
+    ImageAsset.new_icon(icon_paths, assets_path)
+    ImageAsset.new_launch(launch_paths, assets_path)
 
     # file resource
-    puts '[Script] copy file resource'
+    pending_files = Array.new
     configuration["files"].map { |file, path|
       if not path.empty?
         dest_path = File.join(target_group_path, file)
@@ -229,104 +163,77 @@ module XcodeProject
         pending_files << file
       end
     }
-
-    # plist
-    plist_name = "#{code.capitalize}-info.plist"
-    dest_plist_path = File.join(target_group_path, plist_name)
-    src_build_settings = src_target.build_settings("Distribution")
-    src_plist_path = src_build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
-    plist_hash = Plist.parse_xml(src_plist_path)
-    pending_files << plist_name
-
-    plist_hash["CFBundleDisplayName"] = configuration["CFBundleDisplayName"]
-    plist_hash["CFBundleShortVersionString"] = configuration["CFBundleShortVersionString"]
-    plist_hash["CFBundleVersion"] = configuration["CFBundleVersion"]
-    # url types handle
-    url_types = Array.new
-    types = ['kWechatAppId', 'kTencentQQAppId', 'PRODUCT_BUNDLE_IDENTIFIER']
-    types.each do |type|
-      if not configuration[type].empty?
-        identify, scheme = "", configuration[type]
-        case type
-        when 'kWechatAppId'
-          identify = 'wx'
-        when 'kTencentQQAppId'
-          identify = 'tencent'
-          scheme = 'tencent' + scheme
-        when 'PRODUCT_BUNDLE_IDENTIFIER'
-          identify = 'product'
-        end
-        url_type = Hash(
-          'CFBundleTypeRole' => 'Editor', 
-          'CFBundleURLName' => identify,
-          'CFBundleURLSchemes' => Array[scheme]
-        )
-        url_types << url_type
-      end
+    target.add_resources(pending_files)
+    
+    # info.plist
+    build_settings = target.build_settings('Distribution')
+    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', proj_path)
+    info_plist = Plist.parse_xml(plist_path)
+    plist_hash["CFBundleDisplayName"] = update_info["CFBundleDisplayName"] if update_info["CFBundleDisplayName"]
+    plist_hash["CFBundleShortVersionString"] = configuration["CFBundleShortVersionString"] if update_info["CFBundleShortVersionString"]
+    plist_hash["CFBundleVersion"] = configuration["CFBundleVersion"] if update_info["CFBundleVersion"]
+    # url types
+    url_types = info_plist["CFBundleURLTypes"]
+    unless url_types
+      url_types = Array.new
+      info_plist["CFBundleURLTypes"] = url_types
     end
-    plist_hash["CFBundleURLTypes"] = url_types
+    types = {'kWechatAppId' => 'wx', 'kTencentQQAppId' => 'tencent', 'PRODUCT_BUNDLE_IDENTIFIER' => 'product'}
+    types.map { |key, identify|
+      scheme = update_info[key]
+      if scheme
+        url_type = url_types.find { |item| item['CFBundleURLName'] == identify }
+        unless url_types
+          url_type = {'CFBundleTypeRole' => 'Editor', 'CFBundleURLName' => identify, 'CFBundleURLSchemes' => Array.new}
+          url_types << url_type
+        end
+        scheme = 'tencent' + scheme if identify == 'tencent'
+        url_type['CFBundleURLSchemes'] = Array[scheme]
+      end
+    }
     IO.write(dest_plist_path, plist_hash.to_plist)
 
-    # header file
-    distribution_hash = Hash.new
-    ignore_fields = HeadFile.project_fields()
-    configuration.each do |key, value|
-      unless ignore_fields.include? key
-        distribution_hash[key] = value
-      end
-    end
-    headfile_hash = Hash["DISTRIBUTION" => distribution_hash]
-    headfile_path = "#{target_group_path}/SCAppConfigFor#{code.capitalize}Butler.h"
-    HeadFile.dump(headfile_path, headfile_hash)
-    pending_files << "SCAppConfigFor#{code.capitalize}Butler.h"
-
-    # new ref and build file in pbxproj
-    pending_resource_refs = Array.new
-    puts pending_files
-    pending_files.map { |file|
-      ref = group.new_reference(file)
-      pending_resource_refs << ref unless file.index('.h')
+    # headfile
+    headerfile = HeadFile.load(app.headfile)
+    distribution_hash = headfile["DISTRIBUTION"]
+    headfile_fields = ['kDistributioneBaseCommonUrl', 'kJPushAppKeyString', 'kJPushChannelID', 'kUMengAppKeyString', 'kUMengChannelID', 'kWechatAppId', 'kWechatAppKey', 'kTencentQQAppId', 'kTencentQQAppKey', 'kAPIVersion', 'kAPISalt', 'kMobiletype', 'kCompanyCode', 'kVersionCheckType', 'kIDCardScanDevcode', 'kPlateNumberScanDevcode']
+    headfile_fields.map { |field|
+      value = update_info[field]
+      value = '' unless value
+      distribution_hash[field] = value
     }
-    puts pending_resource_refs
-    target.add_resources(pending_resource_refs)
+    HeadFile.dump(app.headfile, headfile_hash)
 
     # build settings
-    puts '[Scirpt] build setting config'
-    target.build_configurations.each do |config|
-      build_settings = config.build_settings
-      build_settings["INFOPLIST_FILE"] = dest_plist_path.gsub(project_path, '$(SRCROOT)')
-      build_settings["PRODUCT_BUNDLE_IDENTIFIER"] = configuration["PRODUCT_BUNDLE_IDENTIFIER"]
-      preprocess_defs = ["$(inherited)", "#{code.upcase}=1"]
-      if config.name == 'Release'
-        preprocess_defs.push("RELEASE=1")
-      elsif config.name == 'Distribution'
-        preprocess_defs.push("DISTRIBUTION=1")
+    bundle_id = update_info['PRODUCT_BUNDLE_IDENTIFIER']
+    if bundle_id
+      target.build_configurations.each do |config|
+        build_settings["PRODUCT_BUNDLE_IDENTIFIER"] = bundle_id
       end
-      build_settings["GCC_PREPROCESSOR_DEFINITIONS"] = preprocess_defs
     end
+  end
 
-    puts '[Scirpt] Edit podfile'
-    podfile_add_target(project_path, target_name)
-
-    puts '[Scirpt] Edit CommonConfig'
-    config_path = File.join(project_path, 'Butler', 'SCCommonConfig.h')
-    config_add_headfile(config_path, code.upcase, "SCAppConfigFor#{code.capitalize}Butler")
-
-    project.save
-
-    # 执行pod install
-    puts '[Scirpt] excute pod install'
-    # Dir.chdir(project_path)
-    # exec 'pod install --silent'
-
+  # create_target method do follow things for you
+  # 1. create target from template, copy build phase and build settings from template, igonre template's private 
+  #    build files. In addition, method will add a target's pre-preocess macro 
+  # 2. make private directory, create plist file and headerfile which contains project's 
+  #    configs, such as http address, jpush key, umeng key and etc. In addition, create imagset.
+  # 4. edit Podfile file, common config file
+  def XcodeProject.new_target(project_path, target_name, configuration, template_name="ButlerForRemain")
+    project = Xcodeproj::Project.open(xcodeproj_file(project_path))
+    company_code = configuration['kCompanyCode']
+    target_name = "ButlerFor#{company_code.capitalize}"
+    create_target_template(project, target_name, company_code, template_name)
+    edit_target()
   end
 
   # allow you to edit project's config, such as http address, project version, build version, etc.
-  def XcodeProject.edit_project(project_path, target_name, configuration)
+  def XcodeProject.edit_project(project_path, target_name, update_info)
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     target = project.targets.find { |item| item.name == target_name }
-    raise "[Script] target #{target_name} not exist" unless target
+    raise "❗ target #{target_name} not exist" unless target
     
+    edit_project()
   end
 
   # fetch target info from project
