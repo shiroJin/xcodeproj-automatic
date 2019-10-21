@@ -49,6 +49,7 @@ module XcodeProject
 
     target = project.new_target(src_target.symbol_type, target_name, src_target.platform_name, src_target.deployment_target)
     target.product_name = target_name
+    puts "🐶new target #{target_name}"
 
     src_target.build_phases.each do |src|
       klass = src.class
@@ -74,13 +75,13 @@ module XcodeProject
         dest.add_file_reference(file.file_ref, true)
       end
     end
-    puts "🍺 copy build phase finished"
+    puts "🐶copy build phase finished"
 
     src_target.build_configurations.each do |config|
       dest_config = target.build_configurations.find { |dest| dest.name == config.name }
       dest_config.build_settings.update(config.build_settings)
     end
-    puts "🍺 copy build setting finished"
+    puts "🐶copy build setting finished"
 
     private_group_name = "ButlerFor#{company_code.capitalize}"
     target_group_path = File.join(project_path, 'Butler', private_group_name)
@@ -117,8 +118,8 @@ module XcodeProject
       pending_resource_refs << ref unless file.index('.h')
     }
     target.add_resources(pending_resource_refs)
-    puts "create file indexes finished"
-    puts "🍺 private files created finished"
+    puts "connect file indexes finished"
+    puts "🐶private files created finished"
     
     target.build_configurations.each do |config|
       build_settings = config.build_settings
@@ -140,8 +141,7 @@ module XcodeProject
     puts "common config file added private headfile: #{headfile_name}"
     
     project.save
-    puts "🍺 project saved"
-
+    puts "🍺🍺🍺 project saved, target create succeed"
     return target
   end
 
@@ -153,7 +153,6 @@ module XcodeProject
     launch_paths = update_info["images"]["LaunchImage"]
     ImageAsset.new_icon(icon_paths, assets_path)
     ImageAsset.new_launch(launch_paths, assets_path)
-
     # file resource
     pending_files = Array.new
     configuration["files"].map { |file, path|
@@ -164,7 +163,6 @@ module XcodeProject
       end
     }
     target.add_resources(pending_files)
-    
     # info.plist
     build_settings = target.build_settings('Distribution')
     plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', proj_path)
@@ -178,13 +176,21 @@ module XcodeProject
       url_types = Array.new
       info_plist["CFBundleURLTypes"] = url_types
     end
-    types = {'kWechatAppId' => 'wx', 'kTencentQQAppId' => 'tencent', 'PRODUCT_BUNDLE_IDENTIFIER' => 'product'}
+    types = {
+             'kWechatAppId' => 'wx', 
+             'kTencentQQAppId' => 'tencent', 
+             'PRODUCT_BUNDLE_IDENTIFIER' => 'product'
+            }
     types.map { |key, identify|
       scheme = update_info[key]
       if scheme
         url_type = url_types.find { |item| item['CFBundleURLName'] == identify }
         unless url_types
-          url_type = {'CFBundleTypeRole' => 'Editor', 'CFBundleURLName' => identify, 'CFBundleURLSchemes' => Array.new}
+          url_type = {
+                      'CFBundleTypeRole' => 'Editor', 
+                      'CFBundleURLName' => identify, 
+                      'CFBundleURLSchemes' => Array.new
+                     }
           url_types << url_type
         end
         scheme = 'tencent' + scheme if identify == 'tencent'
@@ -211,6 +217,8 @@ module XcodeProject
         build_settings["PRODUCT_BUNDLE_IDENTIFIER"] = bundle_id
       end
     end
+
+    project.save
   end
 
   # create_target method do follow things for you
@@ -219,7 +227,7 @@ module XcodeProject
   # 2. make private directory, create plist file and headerfile which contains project's 
   #    configs, such as http address, jpush key, umeng key and etc. In addition, create imagset.
   # 4. edit Podfile file, common config file
-  def XcodeProject.new_target(project_path, target_name, configuration, template_name="ButlerForRemain")
+  def XcodeProject.new_target(project_path, configuration, template_name="ButlerForRemain")
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     company_code = configuration['kCompanyCode']
     target_name = "ButlerFor#{company_code.capitalize}"
@@ -231,9 +239,9 @@ module XcodeProject
   def XcodeProject.edit_project(project_path, target_name, update_info)
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     target = project.targets.find { |item| item.name == target_name }
-    raise "❗ target #{target_name} not exist" unless target
+    raise "❗target #{target_name} not exist" unless target
     
-    edit_project()
+    edit_project(project)
   end
 
   # fetch target info from project
@@ -269,6 +277,7 @@ module XcodeProject
       end
     end
     info['images'] = assets_info
+
     return info    
   end
 
