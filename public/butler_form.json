@@ -1,5 +1,5 @@
 {
-  "tag": "",
+  "Tag": "",
   "PRODUCT_BUNDLE_IDENTIFIER": "",
   "CFBundleDisplayName": "", 
   "CFBundleShortVersionString": "", 
@@ -17,9 +17,10 @@
   "kTencentQQAppKey": "", 
   "kUMengAppKeyString": "", 
   "kUMengChannelID": "", 
-  "kVersionCheckType": "", 
+  "kVersionCheckType": "",
   "kWechatAppId": "", 
   "kWechatAppKey": "",
+  "kAppUpdateUrl": "",
   "images": {
     "AppIcon": [], 
     "LaunchImage": []

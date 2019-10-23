@@ -1,17 +1,21 @@
 class FilesController < ApplicationController
   def upload
-    @file = params['file']
-    @filename = @file.original_filename
-
     @upload_dir = Rails.root.join('public', 'upload')
-    Dir.mkdir('@upload_dir') unless File.exist? @upload_dir
+    Dir.mkdir(@upload_dir) unless File.exist? @upload_dir
 
-    @path = @upload_dir.join(@filename)
-    File.open(@path, 'wb') do |file|
-      file.write(@file.read)
+    @files, @result = params.values, Array.new
+    @files.select do |file|
+      file.instance_of? ActionDispatch::Http::UploadedFile
+    end.each do |file|
+      @filename = file.original_filename
+      @path = @upload_dir.join(@filename)
+      File.open(@path, 'wb') do |fp|
+        fp.write(file.read)
+      end
+      @result << 'http://localhost:3000/files/' + @filename
     end
-
-    render()
+    
+    render :json => @result
   end
   
   def fetch

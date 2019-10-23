@@ -40,7 +40,7 @@ module XcodeProject
   end
 
   # create template target and private files
-  def XcodeProject.create_target_template(project, target_name, company_code, src_name)
+  def XcodeProject.create_target_template(project, project_path, target_name, company_code, src_name)
     target = project.targets.find { |item| item.name == target_name }
     raise "❗target already existed" if target
 
@@ -49,7 +49,7 @@ module XcodeProject
 
     target = project.new_target(src_target.symbol_type, target_name, src_target.platform_name, src_target.deployment_target)
     target.product_name = target_name
-    puts "🐶new target #{target_name}"
+    puts "🐶 new target #{target_name}"
 
     src_target.build_phases.each do |src|
       klass = src.class
@@ -75,13 +75,13 @@ module XcodeProject
         dest.add_file_reference(file.file_ref, true)
       end
     end
-    puts "🐶copy build phase finished"
+    puts "🐶 copy build phase finished"
 
     src_target.build_configurations.each do |config|
       dest_config = target.build_configurations.find { |dest| dest.name == config.name }
       dest_config.build_settings.update(config.build_settings)
     end
-    puts "🐶copy build setting finished"
+    puts "🐶 copy build setting finished"
 
     private_group_name = "ButlerFor#{company_code.capitalize}"
     target_group_path = File.join(project_path, 'Butler', private_group_name)
@@ -91,7 +91,7 @@ module XcodeProject
 
     pending_files = Array.new
 
-    top_asset = "ImagesFor#{code.capitalize}.xcassets"
+    top_asset = "ImagesFor#{company_code.capitalize}.xcassets"
     top_assets_path = File.join(target_group_path, top_asset)
     ImageAsset.new_assets_group(top_assets_path)
     puts "created image assets: #{top_asset}"
@@ -106,7 +106,7 @@ module XcodeProject
     puts "create plist file: #{plist_name}"
     pending_files << plist_name
     
-    headfile_name = "SCAppConfigFor#{code.capitalize}Butler.h"
+    headfile_name = "SCAppConfigFor#{company_code.capitalize}Butler.h"
     headfile_path = File.join(target_group_path, headfile_name)
     IO.write(headfile_path, '')
     puts "created private headfile: #{headfile_name}"
@@ -119,12 +119,12 @@ module XcodeProject
     }
     target.add_resources(pending_resource_refs)
     puts "connect file indexes finished"
-    puts "🐶private files created finished"
+    puts "🐶 private files created finished"
     
     target.build_configurations.each do |config|
       build_settings = config.build_settings
       build_settings["INFOPLIST_FILE"] = dest_plist_path.gsub(project_path, '$(SRCROOT)')
-      preprocess_defs = ["$(inherited)", "#{code.upcase}=1"]
+      preprocess_defs = ["$(inherited)", "#{company_code.upcase}=1"]
       if config.name == 'Release'
         preprocess_defs.push("RELEASE=1")
       elsif config.name == 'Distribution'
@@ -137,7 +137,7 @@ module XcodeProject
     puts "podfile added target"
 
     config_path = File.join(project_path, 'Butler', 'SCCommonConfig.h')
-    config_add_headfile(config_path, company_code.upcase, "SCAppConfigFor#{code.capitalize}Butler")
+    config_add_headfile(config_path, company_code.upcase, "SCAppConfigFor#{company_code.capitalize}Butler")
     puts "common config file added private headfile: #{headfile_name}"
     
     project.save
@@ -227,12 +227,24 @@ module XcodeProject
   # 2. make private directory, create plist file and headerfile which contains project's 
   #    configs, such as http address, jpush key, umeng key and etc. In addition, create imagset.
   # 4. edit Podfile file, common config file
-  def XcodeProject.new_target(project_path, configuration, template_name="ButlerForRemain")
+  def XcodeProject.new_target(project_path, configuration)
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
+    
     company_code = configuration['kCompanyCode']
     target_name = "ButlerFor#{company_code.capitalize}"
-    create_target_template(project, target_name, company_code, template_name)
-    edit_target()
+    display_name = configuration["displayName"]
+    private_group = "Butler/ButlerFor#{company_code.capitalize}"
+    assets = "#{private_group}/ImagesFor#{company_code.capitalize}.xcassets"
+    headfile = "#{private_group}/SCAppConfigFor#{company_code.capitalize}Butler.h"
+    app_hash = Hash('displayName' => display_name,
+                    'targetName' => target_name,
+                    'privateGroup' => private_group,
+                    'assets' => assets,
+                    'headfile' => headfile)
+
+    puts 'begin access project'
+    create_target_template(project, project_path, target_name, company_code, 'ButlerForRemain')
+    # edit_target()
   end
 
   # allow you to edit project's config, such as http address, project version, build version, etc.
