@@ -241,10 +241,10 @@ module XcodeProject
                     'privateGroup' => private_group,
                     'assets' => assets,
                     'headfile' => headfile)
-
-    puts 'begin access project'
+    app = App::AppItem.new(app_hash)
     create_target_template(project, project_path, target_name, company_code, 'ButlerForRemain')
-    # edit_target()
+    edit_target(project, app, configuration)
+    App.add_app(app_hash)
   end
 
   # allow you to edit project's config, such as http address, project version, build version, etc.
@@ -252,8 +252,8 @@ module XcodeProject
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     target = project.targets.find { |item| item.name == target_name }
     raise "❗target #{target_name} not exist" unless target
-    
-    edit_project(project)
+    app = App.find_app(target_name)
+    edit_project(project, app, update_info)
   end
 
   # fetch target info from project
