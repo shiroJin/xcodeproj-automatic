@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   # files
   post 'files/upload', to: 'files#upload'
+  get 'projectFile', to: 'files#fetch_local'
   get 'files/:filename', to: 'files#fetch'
 
   #project

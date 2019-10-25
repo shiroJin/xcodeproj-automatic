@@ -39,7 +39,7 @@ module HeadFile
   end
 
   def HeadFile.dump(dest, info)
-    template_path = File.join(File.expand_path('..', __FILE__), 'Sources/template')
+    template_path = Rails.root.join('public', 'headfile_template')
     template_content = IO.read(template_path)
     template = Liquid::Template.parse(template_content)
     result = template.render('app' => info)

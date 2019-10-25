@@ -145,31 +145,38 @@ module XcodeProject
     return target
   end
 
-  def XcodeProject.edit_target(project, app, update_info)
+  def XcodeProject.edit_target(project, root_path, app, update_info)
     target = project.targets.find { |item| item.name == app.target_name }
     # image resource
-    assets_path = app.assets
+    assets_path = File.join(root_path, app.assets)
     icon_paths = update_info["images"]["AppIcon"]
     launch_paths = update_info["images"]["LaunchImage"]
-    ImageAsset.new_icon(icon_paths, assets_path)
-    ImageAsset.new_launch(launch_paths, assets_path)
+    if icon_paths
+      ImageAsset.new_icon(icon_paths, assets_path)
+    end
+    if launch_paths
+      ImageAsset.new_launch(launch_paths, assets_path)
+    end
     # file resource
     pending_files = Array.new
-    configuration["files"].map { |file, path|
-      if not path.empty?
-        dest_path = File.join(target_group_path, file)
-        FileUtils.cp(path, dest_path)
-        pending_files << file
-      end
-    }
+    files = update_info['files']
+    if files
+      files.map { |file, path|
+        if not path.empty?
+          dest_path = File.join(target_group_path, file)
+          FileUtils.cp(path, dest_path)
+          pending_files << file
+        end
+      }
+    end
     target.add_resources(pending_files)
     # info.plist
     build_settings = target.build_settings('Distribution')
-    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', proj_path)
+    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', root_path)
     info_plist = Plist.parse_xml(plist_path)
-    plist_hash["CFBundleDisplayName"] = update_info["CFBundleDisplayName"] if update_info["CFBundleDisplayName"]
-    plist_hash["CFBundleShortVersionString"] = configuration["CFBundleShortVersionString"] if update_info["CFBundleShortVersionString"]
-    plist_hash["CFBundleVersion"] = configuration["CFBundleVersion"] if update_info["CFBundleVersion"]
+    info_plist["CFBundleDisplayName"] = update_info["CFBundleDisplayName"] if update_info["CFBundleDisplayName"]
+    info_plist["CFBundleShortVersionString"] = update_info["CFBundleShortVersionString"] if update_info["CFBundleShortVersionString"]
+    info_plist["CFBundleVersion"] = update_info["CFBundleVersion"] if update_info["CFBundleVersion"]
     # url types
     url_types = info_plist["CFBundleURLTypes"]
     unless url_types
@@ -185,7 +192,7 @@ module XcodeProject
       scheme = update_info[key]
       if scheme
         url_type = url_types.find { |item| item['CFBundleURLName'] == identify }
-        unless url_types
+        unless url_type
           url_type = {
                       'CFBundleTypeRole' => 'Editor', 
                       'CFBundleURLName' => identify, 
@@ -197,18 +204,19 @@ module XcodeProject
         url_type['CFBundleURLSchemes'] = Array[scheme]
       end
     }
-    IO.write(dest_plist_path, plist_hash.to_plist)
+    IO.write(plist_path, info_plist.to_plist)
 
     # headfile
-    headerfile = HeadFile.load(app.headfile)
+    headfile = HeadFile.load(File.join(root_path, app.headfile))
     distribution_hash = headfile["DISTRIBUTION"]
     headfile_fields = ['kDistributioneBaseCommonUrl', 'kJPushAppKeyString', 'kJPushChannelID', 'kUMengAppKeyString', 'kUMengChannelID', 'kWechatAppId', 'kWechatAppKey', 'kTencentQQAppId', 'kTencentQQAppKey', 'kAPIVersion', 'kAPISalt', 'kMobiletype', 'kCompanyCode', 'kVersionCheckType', 'kIDCardScanDevcode', 'kPlateNumberScanDevcode']
     headfile_fields.map { |field|
-      value = update_info[field]
+      value = distribution_hash[field]
+      value = update_info[field] if update_info[field]
       value = '' unless value
       distribution_hash[field] = value
     }
-    HeadFile.dump(app.headfile, headfile_hash)
+    HeadFile.dump(File.join(root_path, app.headfile), headfile)
 
     # build settings
     bundle_id = update_info['PRODUCT_BUNDLE_IDENTIFIER']
@@ -242,38 +250,40 @@ module XcodeProject
                     'assets' => assets,
                     'headfile' => headfile)
     app = App::AppItem.new(app_hash)
-    create_target_template(project, project_path, target_name, company_code, 'ButlerForRemain')
-    edit_target(project, app, configuration)
+    # create_target_template(project, project_path, target_name, company_code, 'ButlerForRemain')
+    edit_target(project, project_path, app, configuration)
     App.add_app(app_hash)
   end
 
   # allow you to edit project's config, such as http address, project version, build version, etc.
-  def XcodeProject.edit_project(project_path, target_name, update_info)
+  def XcodeProject.edit_project(project_path, company_code, update_info)
+    app = App.find_app(company_code)
+  
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
-    target = project.targets.find { |item| item.name == target_name }
+    target = project.targets.find { |item| item.name == app.target_name }
     raise "❗target #{target_name} not exist" unless target
-    app = App.find_app(target_name)
-    edit_project(project, app, update_info)
+
+    edit_target(project, project_path, app, update_info)
   end
 
   # fetch target info from project
-  def XcodeProject.fetch_target_info(proj_path, private_group_name, target_name)
+  def XcodeProject.fetch_target_info(project_path, company_code)
+    app = App.find_app(company_code)
     info = Hash.new
 
-    proj = Xcodeproj::Project.open(xcodeproj_file(proj_path))
-    target = proj.targets.find { |target| target.display_name == target_name }
+    proj = Xcodeproj::Project.open(xcodeproj_file(project_path))
+    target = proj.targets.find { |target| target.display_name == app.target_name }
     build_settings = target.build_settings('Distribution')
     
-    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', proj_path)
+    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
     info_plist = Plist.parse_xml(plist_path)
     fields =['CFBundleDisplayName', 'CFBundleShortVersionString', 'CFBundleVersion']
     fields.each do |field|
       info[field] = info_plist[field]
     end
 
-    private_group = File.join(proj_path, 'Butler', private_group_name)
-    headfile_name = Dir.entries(private_group).find { |e| e.index(".h") }
-    headfile_path = File.join(private_group, headfile_name)
+    private_group = File.join(project_path, app.private_group)
+    headfile_path = File.join(project_path, app.headfile)
     headerfile = HeadFile.load(headfile_path)
     info = info.merge(headerfile["DISTRIBUTION"])
 
@@ -285,6 +295,7 @@ module XcodeProject
       absolute_path = File.join(xcassets, entry)
       if ['appiconset', 'launchimage', 'imageset'].include? extname
         path = File.join(absolute_path, Dir.entries(absolute_path).find { |f| f.index('png') })
+        path = 'http://localhost:3000/projectFile?src=' + path
         assets_info[filename] = path
       end
     end

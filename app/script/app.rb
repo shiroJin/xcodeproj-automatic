@@ -11,9 +11,9 @@ module App
     end
   end
 
-  def App.find_app(target_name)
+  def App.find_app(company_code)
     app_list = JSON.load(Rails.root.join('public', 'app.json'))
-    app_hash = app_list.find{ |hash| hash["targetName"] == target_name }
+    app_hash = app_list.find{ |hash| hash["code"] == company_code }
     unless app_hash
       return nil
     end
@@ -21,7 +21,7 @@ module App
   end
 
   def App.add_app(app_hash)
-    path = rails.root.join('public', 'app.json')
+    path = Rails.root.join('public', 'app.json')
     app_list = JSON.load(path)
     app_list << app_hash
     IO.write(path, JSON.pretty_generate(app_list))

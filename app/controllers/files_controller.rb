@@ -19,9 +19,15 @@ class FilesController < ApplicationController
   end
   
   def fetch
-    @filename = request.fullpath.split('/').last
-    @src_path = Rails.root.join('public', 'upload', @filename)
-    @data = File.new(@src_path, 'rb').read
-    send_data(@data)
+    filename = request.fullpath.split('/').last
+    src_path = Rails.root.join('public', 'upload', filename)
+    data = File.new(src_path, 'rb').read
+    send_data(data)
+  end
+
+  def fetch_local
+    src = params['src']
+    data = File.new(src, 'rb').read
+    send_data(data)
   end
 end

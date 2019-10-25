@@ -2,7 +2,7 @@ require 'image_size'
 require 'fileutils'
 require 'json'
 
-$SRCROOT = File.expand_path('..', __FILE__)
+$SRCROOT = Rails.root.join('public')
 EMPTY_CONTENT_HASH = Hash["info" => Hash["version" => 1, "author" => "xcode"]]
 
 module ImageAsset
@@ -15,7 +15,7 @@ module ImageAsset
 
     Dir::mkdir(icon_assets_path)
 
-    FileUtils.cp("#{$SRCROOT}/Sources/Icon_Contents.json", File.join(icon_assets_path, 'Contents.json'))
+    FileUtils.cp("#{$SRCROOT}/icon_Contents.json", File.join(icon_assets_path, 'Contents.json'))
 
     # contents.json中文件名称固定，需要根据尺寸重命名。
     icons.each { |absolute_path|
@@ -52,7 +52,7 @@ module ImageAsset
 
     Dir.mkdir(launch_assets_path)
 
-    FileUtils.cp("#{$SRCROOT}/Sources/LaunchImage_Contents.json", "#{launch_assets_path}/Contents.json")
+    FileUtils.cp("#{$SRCROOT}/launchImage_Contents.json", "#{launch_assets_path}/Contents.json")
 
     # contents.json中文件名称固定，需要根据尺寸重命名。
     launchs.each { |absolute_path|
