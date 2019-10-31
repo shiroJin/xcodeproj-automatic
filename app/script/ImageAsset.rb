@@ -2,8 +2,8 @@ require 'image_size'
 require 'fileutils'
 require 'json'
 
-$SRCROOT = Rails.root.join('public')
-EMPTY_CONTENT_HASH = Hash["info" => Hash["version" => 1, "author" => "xcode"]]
+$SRCROOT ||= Rails.root.join('public')
+EMPTY_CONTENT_HASH ||= Hash["info" => Hash["version" => 1, "author" => "xcode"]]
 
 module ImageAsset
   def ImageAsset.new_icon(icons, dest_dir)

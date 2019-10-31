@@ -284,8 +284,8 @@ module XcodeProject
 
     private_group = File.join(project_path, app.private_group)
     headfile_path = File.join(project_path, app.headfile)
-    headerfile = HeadFile.load(headfile_path)
-    info = info.merge(headerfile["DISTRIBUTION"])
+    headfile = HeadFile.load(headfile_path)
+    info = info.merge(headfile["DISTRIBUTION"])
 
     assets_info = Hash.new
     xcassets = File.join(private_group, Dir.entries(private_group).find { |e| e.index("xcassets") })

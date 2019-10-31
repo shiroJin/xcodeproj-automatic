@@ -3,7 +3,7 @@
     "displayName": "一米智服",
     "code": "mh",
     "targetName": "ButlerForRemain",
-    "branchName": "script",
+    "branchName": "rails",
     "privateGroup": "Butler/ButlerForRemain",
     "assets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
     "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
@@ -12,8 +12,10 @@
     "displayName": "园区管理",
     "code": "yz",
     "targetName": "ButlerForTown",
-    "branchName": "proj-yz-snapshot",
-    "privateGroup": "ButlerForTown"
+    "branchName": "test",
+    "privateGroup": "Butler/ButlerForTown",
+    "assets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
+    "headfile": "Butler/ButlerForTown/SCAppConfigForTownButler.h"
   },
   {
     "displayName": "小镇管理",
@@ -28,12 +30,5 @@
     "targetName": "Butler",
     "branchName": "proj-xyjnh-snapshot",
     "privateGroup": "Butler"
-  },
-  {
-    "displayName": null,
-    "targetName": "ButlerForTest",
-    "privateGroup": "Butler/ButlerForTest",
-    "assets": "Butler/ButlerForTest/ImagesForTest.xcassets",
-    "headfile": "Butler/ButlerForTest/SCAppConfigForTestButler.h"
   }
 ]
