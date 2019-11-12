@@ -282,6 +282,14 @@ module XcodeProject
       info[field] = info_plist[field]
     end
 
+    if info['CFBundleShortVersionString'] == '$(MARKETING_VERSION)'
+      info['CFBundleShortVersionString'] = build_settings['MARKETING_VERSION']
+    end
+    
+    if info['CFBundleVersion'] == '$(CURRENT_PROJECT_VERSION)'
+      info['CFBundleVersion'] = build_settings['CURRENT_PROJECT_VERSION']
+    end
+
     private_group = File.join(project_path, app.private_group)
     headfile_path = File.join(project_path, app.headfile)
     headfile = HeadFile.load(headfile_path)

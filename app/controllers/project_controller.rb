@@ -65,7 +65,7 @@ class ProjectController < ApplicationController
   # 获取所有tag
   def fetch_avaiable_tags
     data = self.git.tags.select do |tag|
-      tag.name.index('Fusion_1.1')
+      tag.name =~ /^Fusion_1.\d+.[^0]$/
     end.map do |tag|
       tag.name
     end
@@ -74,6 +74,12 @@ class ProjectController < ApplicationController
 
   #切换项目
   def checkout_app
+    if worktree_is_dirty
+      response.status = 400
+      render :json => 'worktree is dirty!'
+      return
+    end
+
     app = App.find_app(params["companyCode"])
     branch = self.git.branches.find{ |b| b.name == app.branch_name }
     branch.checkout
@@ -101,7 +107,6 @@ class ProjectController < ApplicationController
   end
 
   def is_dirty
-    puts worktree_is_dirty
     cmd = "git --git-dir=#{@@project_path}/.git --work-tree=#{@@project_path} status"
     IO.popen(cmd) { |result|
       message = result.read
@@ -111,6 +116,19 @@ class ProjectController < ApplicationController
       end
       render :json => { 'dirty' => dirty, 'msg' => message }
     }
+  end
+
+  def trash
+    self.git.add
+    self.git.reset_hard('HEAD')
+    render()
+  end
+
+  def commit
+    message = params['message']
+    self.git.add
+    self.git.push('origin', self.git.current_branch)
+    self.git.commit(message)
   end
 
 end

@@ -14,7 +14,7 @@ Rails.application.routes.draw do
   post 'project/addProject', to: 'project#add_new_project'
   post 'project/editProject', to: 'project#edit_project'
 
-  #project
+  #worktree
   get 'project/tags', to: 'project#fetch_avaiable_tags'
   get 'project/isDirty', to: 'project#is_dirty'
 
@@ -23,5 +23,6 @@ Rails.application.routes.draw do
   post 'project/clean', to: 'project#stash'
   post 'project/commit', to: 'project#commit'
   post 'project/merge', to: 'project#merge'
+  post 'project/trash', to: 'project#trash'
 
 end
