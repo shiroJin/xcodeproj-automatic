@@ -125,10 +125,12 @@ class ProjectController < ApplicationController
   end
 
   def commit
-    message = params['message']
-    self.git.add
-    self.git.push('origin', self.git.current_branch)
-    self.git.commit(message)
+    if message = params['msg']
+      self.git.add
+      self.git.commit(message)
+      self.git.push('origin', self.git.current_branch)
+      render()
+    end
   end
 
 end

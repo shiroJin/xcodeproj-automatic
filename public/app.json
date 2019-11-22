@@ -22,7 +22,9 @@
     "code": "wg",
     "targetName": "ButlerForZhwg",
     "branchName": "proj-zhwg-snapshot",
-    "privateGroup": "ButlerForZhwg"
+    "privateGroup": "Butler/ButlerForZhwg",
+    "assets": "Butler/ButlerForZhwg/ImageForZhwgButler.xcassets",
+    "headfile": "Butler/ButlerForZhwg/SCAppConfigForZhwgButler.h"
   },
   {
     "displayName": "慧管理",

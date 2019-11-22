@@ -25,4 +25,7 @@ Rails.application.routes.draw do
   post 'project/merge', to: 'project#merge'
   post 'project/trash', to: 'project#trash'
 
+  #package
+  post 'package', to: 'package#package'
+  
 end

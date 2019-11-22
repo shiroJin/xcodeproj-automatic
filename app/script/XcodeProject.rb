@@ -149,13 +149,13 @@ module XcodeProject
     target = project.targets.find { |item| item.name == app.target_name }
     # image resource
     assets_path = File.join(root_path, app.assets)
-    icon_paths = update_info["images"]["AppIcon"]
-    launch_paths = update_info["images"]["LaunchImage"]
-    if icon_paths
-      ImageAsset.new_icon(icon_paths, assets_path)
-    end
-    if launch_paths
-      ImageAsset.new_launch(launch_paths, assets_path)
+    if images = update_info["images"]
+      if icon_paths = images["AppIcon"]
+        ImageAsset.new_icon(icon_paths, assets_path)
+      end
+      if launch_paths = images["LaunchImage"]
+        ImageAsset.new_launch(launch_paths, assets_path)
+      end
     end
     # file resource
     pending_files = Array.new
@@ -282,6 +282,7 @@ module XcodeProject
       info[field] = info_plist[field]
     end
 
+    ## Xcode11 version
     if info['CFBundleShortVersionString'] == '$(MARKETING_VERSION)'
       info['CFBundleShortVersionString'] = build_settings['MARKETING_VERSION']
     end
@@ -310,6 +311,18 @@ module XcodeProject
     info['images'] = assets_info
 
     return info    
+  end
+
+  def XcodeProject.fetch_target_build_configuration(project_path, target_name, name="Distribution")
+    project = Xcodeproj::Project.open(xcodeproj_file(project_path))
+
+    target = project.targets.find { |t| t.display_name == target_name }
+    raise "❗target #{target_name} not exist" unless target
+
+    build_configuration = target.build_configurations.find { |b| b.name == name }
+    raise "❗build_configuration #{name} not exist" unless build_configuration
+    
+    return build_configuration.build_settings
   end
 
 end
