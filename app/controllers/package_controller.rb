@@ -1,3 +1,5 @@
+require "plist"
+
 class PackageController < ApplicationController
   @@project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
   
@@ -8,11 +10,8 @@ class PackageController < ApplicationController
   def package
     app = App.find_app_with_branch(self.git.current_branch)
     distribution_configuration = XcodeProject.fetch_target_build_configuration(@@project_path, app.target_name)
-
-    puts distribution_configuration
+    generate_export_plist(distribution_configuration, "enterprise")
     target = app.target_name
-    sign = distribution_configuration["CODE_SIGN_IDENTITY"]
-    provision = distribution_configuration["PROVISIONING_PROFILE"]
 
     pod_install
     clean(target)
@@ -20,6 +19,21 @@ class PackageController < ApplicationController
     ipa_path = export_archive(archive_path)
 
     render()
+  end
+
+  def generate_export_plist(configuration, method)
+    sign = configuration["CODE_SIGN_IDENTITY"]
+    provision = configuration["PROVISIONING_PROFILE_SPECIFIER"]
+    team = configuration["DEVELOPMENT_TEAM"]
+
+    export_map = Map.new
+
+    export_map["method"] = method
+    export_map["provisioningProfiles"] = provision
+    export_map["teamID"] = team
+    export_map["compileBitcode"] = false
+
+    IO.write("", export_map.to_plist)
   end
 
   def pod_install
