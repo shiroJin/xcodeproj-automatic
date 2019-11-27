@@ -1,8 +1,9 @@
 require 'json'
+
 module App
+
   class AppItem
     attr_accessor :display_name, :target_name, :private_group, :assets, :headfile, :branch_name, :company_code
-
     def initialize(hash)
       @display_name = hash["displayName"]
       @target_name = hash["targetName"]
@@ -12,7 +13,6 @@ module App
       @branch_name = hash["branchName"]
       @company_code = hash["code"]
     end
-
   end
 
   def App.find_app(company_code)

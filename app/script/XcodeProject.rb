@@ -313,7 +313,7 @@ module XcodeProject
     return info    
   end
 
-  def XcodeProject.fetch_target_build_configuration(project_path, target_name, name="Distribution")
+  def XcodeProject.build_configuration(project_path, target_name, name="Distribution")
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
 
     target = project.targets.find { |t| t.display_name == target_name }

@@ -3,26 +3,46 @@ require "pty"
 
 class PackageController < ApplicationController
   # @@project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
-  @@project_path = '/Users/remain/Desktop/script-work/BusinessAssistantForFusion'
-  
-  def git
-    @git ||= Git.open(@@project_path)
+
+  def package()
+    project_path = '/Users/remain/Desktop/script-work/BusinessAssistantForFusion'
+    exec_package(project_path, 'BusinessAssistantForRemain')
   end
 
-  def package(method="enterprise")
-    # app = App.find_app_with_branch(self.git.current_branch)
-    # target = app.target_name
-    distribution_configuration = XcodeProject.fetch_target_build_configuration(@@project_path, 'BusinessAssistantForRemain')
-    export_plist_path = generate_export_plist(distribution_configuration, method)
-    target = "BusinessAssistantForRemain"
+  def exec_package(proj_path, target, method="enterprise")
+    configuation = XcodeProject.build_configuration(@@project_path, target)
 
-    Dir.chdir(@@project_path) do
+    Dir.chdir(proj_path) do
+      archive_dir = mkdir_archive(target)
+      export_plist_path = File.join(archive_dir, export.plist)
+      archive_path = File.join(archive_dir, "#{target}.xcarchive")
+      export_path = File.join(archive_dir, target)
+
       pod_install
-      # archive_path = archive(target)
-      # ipa_path = export_archive(archive_path, export_plist_path)
+      archive(target, archive_path)
+      generate_export_plist(configuration, method, export_plist_path)
+      ipa_path = export_archive(archive_path, export_plist_path)
     end
 
     render()
+  end
+
+  def mkdir_archive(target)
+    build_dir = make_build_dir_if_needed
+    time = DateTime.now.strftime('%Y%m%dT%H%M')
+    archive_dir = File.join(build_dir, target + time)
+    unless Dir.exist? archive_dir
+      Dir.mkdir(archive_dir)
+    end
+    return archive_dir
+  end
+
+  def make_build_dir_if_needed
+    build_dir = File.join(Dir.pwd, 'build')
+    unless Dir.exist? build_dir
+      Dir.mkdir(build_dir)
+    end
+    return build_dir
   end
 
   def generate_export_plist(configuration, method)
@@ -40,9 +60,7 @@ class PackageController < ApplicationController
     export_hash["signingCertificate"] = certificate
     export_hash["provisioningProfiles"] = { bundle_id => provision }
 
-    export_plist_path = "/Users/remain/Desktop/script-work/BusinessAssistantForFusion/build/export.plist"
     IO.write(export_plist_path, export_hash.to_plist)
-    return export_plist_path
   end
 
   def pod_install
@@ -57,8 +75,7 @@ class PackageController < ApplicationController
     }
   end
 
-  def archive(scheme, configuration="Release", archive_dir="build")
-    archive_path = File.join(archive_dir, "#{scheme}.xcarchive")
+  def archive(scheme, archive_path, configuration="Release")
     workspace = Dir.entries(@@project_path).find { |e| e.index('workspace') }
     cmd = "xcodebuild clean archive -workspace #{workspace} -scheme #{scheme} -configuration #{configuration} -archivePath #{archive_path}"
     begin
