@@ -46,11 +46,15 @@ class PackageController < ApplicationController
   end
 
   def pod_install
-    # IO.popen("pod --version") { |result|
-    #   message = result.read
-    #   puts message
-    # }
-    system('bundle exec pod --version')
+    new_env = {
+      'GEM_HOME'=>'/Users/remain/.rvm/gems/ruby-2.6.3',
+      'GEM_PATH'=>'/Users/remain/.rvm/gems/ruby-2.6.3:/Users/remain/.rvm/gems/ruby-2.6.3@global',
+      'BUNDLE_BIN_PATH'=>'',
+      'BUNDLE_GEMFILE'=> '',
+    }
+    IO.popen(new_env, "pod install") { |result|
+      result.each { |line| print line }
+    }
   end
 
   def archive(scheme, configuration="Release", archive_dir="build")
