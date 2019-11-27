@@ -1,0 +1,18 @@
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/jaro_winkler-1.5.3/ext/jaro_winkler
+/Users/remain/.rvm/rubies/ruby-2.6.3/bin/ruby -I /Users/remain/.rvm/rubies/ruby-2.6.3/lib/ruby/site_ruby/2.6.0 -r ./siteconf20191126-24100-1ug2dm7.rb extconf.rb
+creating Makefile
+
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/jaro_winkler-1.5.3/ext/jaro_winkler
+make "DESTDIR=" clean
+
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/jaro_winkler-1.5.3/ext/jaro_winkler
+make "DESTDIR="
+compiling adj_matrix.c
+compiling codepoints.c
+compiling jaro.c
+compiling jaro_winkler.c
+linking shared-object jaro_winkler/jaro_winkler_ext.bundle
+
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/jaro_winkler-1.5.3/ext/jaro_winkler
+make "DESTDIR=" install
+/usr/local/opt/coreutils/bin/ginstall -c -m 0755 jaro_winkler_ext.bundle ./.gem.20191126-24100-9mojcl/jaro_winkler

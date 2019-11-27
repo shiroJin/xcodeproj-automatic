@@ -1,0 +1,19 @@
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/byebug-11.0.1/ext/byebug
+/Users/remain/.rvm/rubies/ruby-2.6.3/bin/ruby -I /Users/remain/.rvm/rubies/ruby-2.6.3/lib/ruby/site_ruby/2.6.0 -r ./siteconf20191126-24100-djdx01.rb extconf.rb
+creating Makefile
+
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/byebug-11.0.1/ext/byebug
+make "DESTDIR=" clean
+
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/byebug-11.0.1/ext/byebug
+make "DESTDIR="
+compiling breakpoint.c
+compiling byebug.c
+compiling context.c
+compiling locker.c
+compiling threads.c
+linking shared-object byebug/byebug.bundle
+
+current directory: /Users/remain/Desktop/xcodeproj-helper/xcodeproj-automatic/vendor/bundle/ruby/2.6.0/gems/byebug-11.0.1/ext/byebug
+make "DESTDIR=" install
+/usr/local/opt/coreutils/bin/ginstall -c -m 0755 byebug.bundle ./.gem.20191126-24100-10eoy6s/byebug

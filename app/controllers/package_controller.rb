@@ -1,22 +1,26 @@
 require "plist"
+require "pty"
 
 class PackageController < ApplicationController
-  @@project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
+  # @@project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
+  @@project_path = '/Users/remain/Desktop/script-work/BusinessAssistantForFusion'
   
   def git
     @git ||= Git.open(@@project_path)
   end
 
-  def package
-    app = App.find_app_with_branch(self.git.current_branch)
-    distribution_configuration = XcodeProject.fetch_target_build_configuration(@@project_path, app.target_name)
-    generate_export_plist(distribution_configuration, "enterprise")
-    target = app.target_name
+  def package(method="enterprise")
+    # app = App.find_app_with_branch(self.git.current_branch)
+    # target = app.target_name
+    distribution_configuration = XcodeProject.fetch_target_build_configuration(@@project_path, 'BusinessAssistantForRemain')
+    export_plist_path = generate_export_plist(distribution_configuration, method)
+    target = "BusinessAssistantForRemain"
 
-    pod_install
-    clean(target)
-    archive_path = archive(target)
-    ipa_path = export_archive(archive_path)
+    Dir.chdir(@@project_path) do
+      pod_install
+      # archive_path = archive(target)
+      # ipa_path = export_archive(archive_path, export_plist_path)
+    end
 
     render()
   end
@@ -25,54 +29,62 @@ class PackageController < ApplicationController
     sign = configuration["CODE_SIGN_IDENTITY"]
     provision = configuration["PROVISIONING_PROFILE_SPECIFIER"]
     team = configuration["DEVELOPMENT_TEAM"]
+    certificate = configuration["CODE_SIGN_IDENTITY"]
+    bundle_id = configuration["PRODUCT_BUNDLE_IDENTIFIER"]
 
-    export_map = Map.new
+    export_hash = Hash.new
+    export_hash["signingStyle"] = "manual"
+    export_hash["compileBitcode"] = false
+    export_hash["method"] = method
+    export_hash["teamID"] = team
+    export_hash["signingCertificate"] = certificate
+    export_hash["provisioningProfiles"] = { bundle_id => provision }
 
-    export_map["method"] = method
-    export_map["provisioningProfiles"] = provision
-    export_map["teamID"] = team
-    export_map["compileBitcode"] = false
-
-    IO.write("", export_map.to_plist)
+    export_plist_path = "/Users/remain/Desktop/script-work/BusinessAssistantForFusion/build/export.plist"
+    IO.write(export_plist_path, export_hash.to_plist)
+    return export_plist_path
   end
 
   def pod_install
-    Dir.chdir(@@project_path) do
-      IO.popen("pod install") { |result|
-        puts result
-      }
-    end
+    # IO.popen("pod --version") { |result|
+    #   message = result.read
+    #   puts message
+    # }
+    system('bundle exec pod --version')
   end
 
-  def clean(scheme, configuration="Distribution")
-    Dir.chdir(@@project_path) do
-      workspace = Dir.entries(@@project_path).find { |e| e.index('workspace') }
-      cmd = "xcodebuild clean -workspace #{workspace} -scheme #{scheme} -configuration #{configuration}"
-      IO.popen(cmd) { |result|
-        puts result
-      }
-    end
-  end
-
-  def archive(scheme, configuration="Distribution", archive_dir="~/Desktop")
+  def archive(scheme, configuration="Release", archive_dir="build")
     archive_path = File.join(archive_dir, "#{scheme}.xcarchive")
-    Dir.chdir(@@project_path) do
-      workspace = Dir.entries(@@project_path).find { |e| e.index('workspace') }
-      cmd = "xcodebuild archive -workspace #{workspace} -scheme #{scheme} -configuration #{configuration} -archivePath #{archive_path}"
-      IO.popen(cmd) { |result|
-        puts result
-      }
+    workspace = Dir.entries(@@project_path).find { |e| e.index('workspace') }
+    cmd = "xcodebuild clean archive -workspace #{workspace} -scheme #{scheme} -configuration #{configuration} -archivePath #{archive_path}"
+    begin
+      PTY.spawn(cmd) do |stdout, stdin, pid|
+        begin
+          stdout.each { |line| print line }
+        rescue Errno::EIO
+          puts "Errno:EIO error, but this probably just means " + "that the process has finished giving output"
+        end
+      end
+    rescue PTY::ChildExited
+      puts "The child process exited!"
     end
     return archive_path
   end
 
-  def export_archive(archive_path, export_dir="~/Desktop")
-    Dir.chdir(@@project_path) do
-      workspace = Dir.entries(@@project_path).find { |e| e.index('workspace') }
-      cmd = "xcodebuild archive -workspace #{workspace} -scheme #{scheme} -configuration #{configuration} -archivePath #{archive_path}"
-      IO.popen(cmd) { |result|
-        puts result
-      }
+  def export_archive(archive_path, export_plist_path, export_dir="build")
+    workspace = Dir.entries(@@project_path).find { |e| e.index('workspace') }
+    export_path = File.join(export_dir, "BusinessAssistantForRemain")
+    cmd = "xcodebuild -exportArchive -archivePath #{archive_path} -exportPath #{export_path} -exportOptionsPlist #{export_plist_path}"
+    begin
+      PTY.spawn(cmd) do |stdout, stdin, pid|
+        begin
+          stdout.each { |line| print line }
+        rescue Errno::EIO
+          puts "Errno:EIO error, but this probably just means " + "that the process has finished giving output"
+        end
+      end
+    rescue PTY::ChildExited
+      puts "The child process exited!"
     end
   end
 
