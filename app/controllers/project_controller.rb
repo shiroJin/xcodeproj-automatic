@@ -1,8 +1,10 @@
 require_relative '../script/app'
 require_relative '../script/XcodeProject'
 require 'git'
+
 class ProjectController < ApplicationController
-  @@project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
+  # @@project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
+  @@project_path = '/Users/mashiro_jin/Desktop/LMWork/ButlerForFusion'
   
   def git
     @git ||= Git.open(@@project_path)
@@ -131,6 +133,11 @@ class ProjectController < ApplicationController
       self.git.push('origin', self.git.current_branch)
       render()
     end
+  end
+
+  def pull_single_branch
+    self.git.pull('origin', self.git.current_branch)
+    render()
   end
 
 end

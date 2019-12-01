@@ -20,12 +20,13 @@ Rails.application.routes.draw do
 
   post 'project/checkout', to: 'project#checkout_app'
   post 'project/pull', to: 'project#pull'
+  post 'project/pullCurrent', to: 'project#pull_single_branch'
   post 'project/clean', to: 'project#stash'
   post 'project/commit', to: 'project#commit'
   post 'project/merge', to: 'project#merge'
   post 'project/trash', to: 'project#trash'
 
   #package
-  post 'package', to: 'package#package'
+  post 'project/package', to: 'package#package'
   
 end
