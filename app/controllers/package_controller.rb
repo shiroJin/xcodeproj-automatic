@@ -2,17 +2,17 @@ require "plist"
 require "pty"
 
 class PackageController < ApplicationController
-  # project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
 
   def package()
-    # project_path = '/Users/remain/Desktop/script-work/BusinessAssistantForFusion'
-    project_path = '/Users/mashiro_jin/Desktop/LMWork/BusinessAssistantForFusion'
-    exec_package(project_path, 'BusinessAssistantForRemain')
+    project_path = '/Users/remain/Desktop/script-work/BusinessAssistantForFusion'
+    package_result = exec_package(project_path, 'BusinessAssistantForRemain')
+    render :json => package_result
   end
 
   def exec_package(project_path, target, method="enterprise")
-    configuation = XcodeProject.build_configuration(project_path, target)
+    configuration = XcodeProject.build_configuration(project_path, target)
 
+    result = Hash.new
     Dir.chdir(project_path) do
       archive_dir = mkdir_archive()
       export_plist_path = File.join(archive_dir, 'export.plist')
@@ -21,11 +21,18 @@ class PackageController < ApplicationController
 
       pod_install
       archive(target, archive_path)
+      raise "archive failed" unless File.exist? archive_path
       generate_export_plist(configuration, method, export_plist_path)
-      ipa_path = export_archive(archive_path, export_plist_path)
+      raise "generate export plist failed" unless File.exist? export_plist_path
+      export_archive(archive_path, export_plist_path, export_path)
+      raise "export archive failed" unless export_path
+
+      result["archivePath"] = archive_path
+      result["exportPlist"] = export_plist_path
+      result["exportPath"] = export_path
     end
 
-    render()
+    return result
   end
 
   def mkdir_archive
@@ -46,7 +53,7 @@ class PackageController < ApplicationController
     return build_dir
   end
 
-  def generate_export_plist(configuration, method)
+  def generate_export_plist(configuration, method, export_plist_path)
     sign = configuration["CODE_SIGN_IDENTITY"]
     provision = configuration["PROVISIONING_PROFILE_SPECIFIER"]
     team = configuration["DEVELOPMENT_TEAM"]
@@ -65,10 +72,10 @@ class PackageController < ApplicationController
   end
 
   def pod_install
-    gem_home = ENV["GEM_HOME"]
+    rvm_path = ENV["rvm_path"]
     env = {
-      'GEM_HOME' => gem_home,
-      'GEM_PATH' => gem_home,
+      'GEM_HOME' => "#{rvm_path}/gems/ruby-2.6.3",
+      'GEM_PATH' => "#{rvm_path}/gems/ruby-2.6.3",
       'BUNDLE_BIN_PATH' => '',
       'BUNDLE_GEMFILE' => '',
     }
@@ -78,7 +85,7 @@ class PackageController < ApplicationController
   end
 
   def archive(scheme, archive_path, configuration="Release")
-    workspace = Dir.entries(project_path).find { |e| e.index('workspace') }
+    workspace = Dir.entries(Dir.pwd).find { |e| e.index('workspace') }
     cmd = "xcodebuild clean archive -workspace #{workspace} -scheme #{scheme} -configuration #{configuration} -archivePath #{archive_path}"
     begin
       PTY.spawn(cmd) do |stdout, stdin, pid|
@@ -94,9 +101,7 @@ class PackageController < ApplicationController
     return archive_path
   end
 
-  def export_archive(archive_path, export_plist_path, export_dir="build")
-    workspace = Dir.entries(project_path).find { |e| e.index('workspace') }
-    export_path = File.join(export_dir, "BusinessAssistantForRemain")
+  def export_archive(archive_path, export_plist_path, export_path)
     cmd = "xcodebuild -exportArchive -archivePath #{archive_path} -exportPath #{export_path} -exportOptionsPlist #{export_plist_path}"
     begin
       PTY.spawn(cmd) do |stdout, stdin, pid|
