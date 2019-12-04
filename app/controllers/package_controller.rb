@@ -10,6 +10,8 @@ class PackageController < ApplicationController
   end
 
   def exec_package(project_path, target, method="enterprise")
+    unlock_login_keychain
+    return
     configuration = XcodeProject.build_configuration(project_path, target)
 
     result = Hash.new
@@ -19,6 +21,7 @@ class PackageController < ApplicationController
       archive_path = File.join(archive_dir, "#{target}.xcarchive")
       export_path = File.join(archive_dir, target)
 
+      unlock_login_keychain
       pod_install
       archive(target, archive_path)
       raise "archive failed" unless File.exist? archive_path
@@ -33,6 +36,13 @@ class PackageController < ApplicationController
     end
 
     return result
+  end
+
+  def unlock_login_keychain
+    cmd = "security unlock-keychain -p Uama123 ~/Library/Keychains/login.keychain"
+    IO.popen(cmd) { |std|
+      puts std.read
+    }
   end
 
   def mkdir_archive
