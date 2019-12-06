@@ -1,11 +1,12 @@
 require_relative '../script/app'
 require_relative '../script/XcodeProject'
+require_relative '../script/myUtils'
 require 'git'
 
 class ProjectController < ApplicationController
   # @project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
-  @project_path = '/Users/panjiafei/freeMyMac/workspace/ButlerForFusion'
-  
+  @@project_path = '/Users/remain/freeMyMac/workspace/ButlerForFusion'
+
   def git
     puts @@project_path
     @git ||= Git.open(@@project_path)
@@ -31,6 +32,7 @@ class ProjectController < ApplicationController
     raise "checkout new branch failed" if self.git.current_branch.name != branch_name
 
     XcodeProject.new_target(project_path, params.as_json)
+    
     render()
   end
 
@@ -42,7 +44,9 @@ class ProjectController < ApplicationController
 
   # 获取项目信息
   def fetch_project_info
+    domain = request.protocol + request.host_with_port
     data = XcodeProject.fetch_target_info(@@project_path, params["companyCode"])
+    data = MyUtils.map_remote(data, domain)
     render :json => data
   end
 
@@ -62,6 +66,8 @@ class ProjectController < ApplicationController
   def fetch_current_project
     app = App.find_app_with_branch(self.git.current_branch)
     data = XcodeProject.fetch_target_info(@@project_path, app.company_code)
+    domain = request.protocol + request.host_with_port
+    data = MyUtils.map_remote(data, domain)
     render :json => data
   end
 
@@ -132,8 +138,10 @@ class ProjectController < ApplicationController
       self.git.add
       self.git.commit(message)
       self.git.push('origin', self.git.current_branch)
-      render()
+    else
+      reponse.status = 502
     end
+    render()
   end
 
   def pull_single_branch

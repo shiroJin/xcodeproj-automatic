@@ -304,7 +304,7 @@ module XcodeProject
       absolute_path = File.join(xcassets, entry)
       if ['appiconset', 'launchimage', 'imageset'].include? extname
         path = File.join(absolute_path, Dir.entries(absolute_path).find { |f| f.index('png') })
-        path = 'http://localhost:3000/projectFile?src=' + path
+        path = '#{domain}/projectFile?src=' + path
         assets_info[filename] = path
       end
     end

@@ -28,5 +28,8 @@ Rails.application.routes.draw do
 
   #package
   post 'project/package', to: 'package#package'
+
+  #workspace
+  get 'workspace/repositories', to: 'workspace#list_repositories'
   
 end
