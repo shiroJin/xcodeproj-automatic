@@ -4,7 +4,7 @@ require 'git'
 
 class ProjectController < ApplicationController
   # @project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
-  @project_path = '/Users/mashiro_jin/Desktop/LMWork/ButlerForFusion'
+  @project_path = '/Users/panjiafei/freeMyMac/workspace/ButlerForFusion'
   
   def git
     @git ||= Git.open(@project_path)

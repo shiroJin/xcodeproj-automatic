@@ -4,14 +4,13 @@ require "pty"
 class PackageController < ApplicationController
 
   def package()
-    project_path = '/Users/remain/Desktop/script-work/BusinessAssistantForFusion'
-    package_result = exec_package(project_path, 'BusinessAssistantForRemain')
+    project_path = '/Users/panjiafei/freeMyMac/workspace/ButlerForFusion'
+    package_result = exec_package(project_path, 'ButlerForRemain')
     render :json => package_result
   end
 
   def exec_package(project_path, target, method="enterprise")
     unlock_login_keychain
-    return
     configuration = XcodeProject.build_configuration(project_path, target)
 
     result = Hash.new
