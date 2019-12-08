@@ -4,11 +4,9 @@ require_relative '../script/myUtils'
 require 'git'
 
 class ProjectController < ApplicationController
-  # @project_path = '/Users/remain/Desktop/script-work/ButlerForFusion'
-  @@project_path = '/Users/remain/freeMyMac/workspace/ButlerForFusion'
+  @@project_path = File.join(MyUtils.workspace_path, 'ButlerForFusion')
 
   def git
-    puts @@project_path
     @git ||= Git.open(@@project_path)
   end
 
@@ -33,6 +31,24 @@ class ProjectController < ApplicationController
 
     XcodeProject.new_target(project_path, params.as_json)
     
+    render()
+  end
+
+  def add_new_target
+    repository, branch = '', 'proj-xyjnh-snapshot'
+
+    if current_branch = self.git.current_branch
+      unless current_branch.name == branch
+        Dir.chdir(project_path) do
+          cmd = "git checkout #{branch}"
+          IO.popen(cmd)
+        end
+      end
+      raise "error branch" unless self.git.current_branch == branch
+    end
+    
+    XcodeProject.new_target(repository, params.as_json)
+
     render()
   end
 

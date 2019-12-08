@@ -40,11 +40,11 @@ module XcodeProject
   end
 
   # create template target and private files
-  def XcodeProject.create_target_template(project, project_path, target_name, company_code, src_name)
+  def XcodeProject.create_target_template(project, project_path, target_name, company_code, template_name)
     target = project.targets.find { |item| item.name == target_name }
     raise "❗target already existed" if target
 
-    src_target = project.targets.find { |item| item.name == src_name }
+    src_target = project.targets.find { |item| item.name == template_name }
     raise "❗src target is not existed" unless src_target
 
     target = project.new_target(src_target.symbol_type, target_name, src_target.platform_name, src_target.deployment_target)

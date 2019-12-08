@@ -31,5 +31,6 @@ Rails.application.routes.draw do
 
   #workspace
   get 'workspace/repositories', to: 'workspace#list_repositories'
+  post 'workspace/createRepository', to: 'workspace#create_repository'
   
 end

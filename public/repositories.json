@@ -1,5 +1,6 @@
 [
   {
-    ""
+    "name" : "ButlerForFusion",
+    "remote_url" : "http://git.uama.com.cn:8888/FusionPlatform/ButlerForFusion.git"
   }
 ]
