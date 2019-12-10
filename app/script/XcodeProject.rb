@@ -4,29 +4,36 @@ require 'plist'
 require 'fileutils'
 require_relative './HeadFile'
 require_relative './ImageAsset'
-require_relative './app'
+require_relative './TargetConfiguration'
 
 module XcodeProject
-  # return xcodeproj file name in directory
+
+  # @return xcodeproj file name in directory
   def XcodeProject.xcodeproj_file(dir)
     file_name = Dir.entries(dir).find { |entry| entry.index('xcodeproj') }
     return File.join(dir, file_name)
   end
 
   # insert "target xxx do\n end" into podfile
-  def XcodeProject.podfile_add_target(project_path, target_name)
+  #
+  # @param [String] project_path
+  #
+  # @param [String] target 
+  #
+  def XcodeProject.podfile_add_target(project_path, target)
     podfile_path = File.join(project_path, 'Podfile')
     content = ""
     IO.foreach(podfile_path) do |line|
       content += line
       if line.index("abstract_target")
-        content += "target '#{target_name}' do\nend\n"
+        content += "target '#{target}' do\nend\n"
       end
     end
     IO.write(podfile_path, content)
   end
 
   # import header file in config file
+  #
   def XcodeProject.config_add_headfile(config_file_path, pre_process_macro, headfile_name)
     index, content = 0, ""
     IO.foreach(config_file_path) do |line|
@@ -40,6 +47,7 @@ module XcodeProject
   end
 
   # create template target and private files
+  #
   def XcodeProject.create_target_template(project, project_path, target_name, company_code, template_name)
     target = project.targets.find { |item| item.name == target_name }
     raise "❗target already existed" if target
@@ -230,11 +238,16 @@ module XcodeProject
   end
 
   # create_target method do follow things for you
-  # 1. create target from template, copy build phase and build settings from template, igonre template's private 
-  #    build files. In addition, method will add a target's pre-preocess macro 
-  # 2. make private directory, create plist file and headerfile which contains project's 
-  #    configs, such as http address, jpush key, umeng key and etc. In addition, create imagset.
-  # 4. edit Podfile file, common config file
+  # 1. create target from template, copy build phase and build settings from template, 
+  #    igonre template's private build files. In addition, method will add a target's 
+  #    pre-preocess macro 
+  # 2. make private directory, create plist file and headerfile, In addition, create imagset.
+  # 3. edit Podfile file, common config file
+  #
+  # @param [String] project_path
+  #
+  # @param configuration
+  #
   def XcodeProject.new_target(project_path, configuration)
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     
@@ -255,7 +268,8 @@ module XcodeProject
     App.add_app(app_hash)
   end
 
-  # allow you to edit project's config, such as http address, project version, build version, etc.
+  # edit project's config, such as http address, project version, build version, etc.
+  #
   def XcodeProject.edit_project(project_path, company_code, update_info)
     app = App.find_app(company_code)
   
@@ -267,50 +281,63 @@ module XcodeProject
   end
 
   # fetch target info from project
-  def XcodeProject.fetch_target_info(project_path, company_code)
-    app = App.find_app(company_code)
-    info = Hash.new
+  #
+  # @param [String] project_path
+  #
+  # @param [TargetConfiguration] target_configuration
+  #
+  def XcodeProject.fetch_target_info(project_path, target_configuration)
+    result = Hash.new
 
     proj = Xcodeproj::Project.open(xcodeproj_file(project_path))
-    target = proj.targets.find { |target| target.display_name == app.enterprise_configuration.target }
+    target = proj.targets.find { |target| target.display_name == target_configuration.target }
     build_settings = target.build_settings('Distribution')
     
+    # pbxproj information
+    pbxproj_info = Hash.new
+    pbxproj_info["PRODUCT_BUNDLE_IDENTIFIER"] = build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
+    result["pbxproj"] = pbxproj_info
+
+    # plist information
+    plist_info = Hash.new
     plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
     info_plist = Plist.parse_xml(plist_path)
     fields =['CFBundleDisplayName', 'CFBundleShortVersionString', 'CFBundleVersion']
     fields.each do |field|
-      info[field] = info_plist[field]
+      plist_info[field] = info_plist[field]
     end
+    # in xcode11, CFBundleShortVersionString may get $(MARKETING_VERSION), CFBundleVersion get
+    # $(CURRENT_PROJECT_VERSION)
+    if plist_info['CFBundleShortVersionString'] == '$(MARKETING_VERSION)'
+      plist_info['CFBundleShortVersionString'] = build_settings['MARKETING_VERSION']
+    end
+    if plist_info['CFBundleVersion'] == '$(CURRENT_PROJECT_VERSION)'
+      plist_info['CFBundleVersion'] = build_settings['CURRENT_PROJECT_VERSION']
+    end
+    result["plist"] = plist_info
 
-    ## Xcode11 version
-    if info['CFBundleShortVersionString'] == '$(MARKETING_VERSION)'
-      info['CFBundleShortVersionString'] = build_settings['MARKETING_VERSION']
-    end
-    
-    if info['CFBundleVersion'] == '$(CURRENT_PROJECT_VERSION)'
-      info['CFBundleVersion'] = build_settings['CURRENT_PROJECT_VERSION']
-    end
-
-    private_group = File.join(project_path, app.enterprise_configuration.private_group)
-    headfile_path = File.join(project_path, app.enterprise_configuration.headfile)
+    # headfile information
+    headfile_path = File.join(project_path, target_configuration.headfile)
     headfile = HeadFile.load(headfile_path)
-    info = info.merge(headfile["DISTRIBUTION"])
+    headfile_info = headfile["DISTRIBUTION"]
+    result["headfile"] = headfile_info
 
+    # image asset information
     assets_info = Hash.new
-    xcassets = File.join(private_group, Dir.entries(private_group).find { |e| e.index("xcassets") })
-    Dir.entries(xcassets).each do |entry|
+    image_assets_path = File.join(project_path, target_configuration.image_assets)
+    Dir.entries(image_assets_path).each do |entry|
       filename = entry.split('.').first
       extname = entry.split('.').last
-      absolute_path = File.join(xcassets, entry)
+      absolute_path = File.join(image_assets_path, entry)
       if ['appiconset', 'launchimage', 'imageset'].include? extname
         path = File.join(absolute_path, Dir.entries(absolute_path).find { |f| f.index('png') })
         path = '#{domain}/projectFile?src=' + path
         assets_info[filename] = path
       end
     end
-    info['images'] = assets_info
+    result['image assets'] = assets_info
 
-    return info    
+    return result    
   end
 
   def XcodeProject.build_configuration(project_path, target_name, name="Distribution")

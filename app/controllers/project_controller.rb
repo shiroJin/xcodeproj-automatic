@@ -1,5 +1,6 @@
 require_relative '../script/app'
 require_relative '../script/XcodeProject'
+require_relative '../script/TargetConfiguration'
 require_relative '../script/myUtils'
 require 'git'
 
@@ -62,11 +63,9 @@ class ProjectController < ApplicationController
   end
 
   # 获取项目信息
-  def fetch_project_info
-    domain = request.protocol + request.host_with_port
-    data = XcodeProject.fetch_target_info(self.project_path, params["companyCode"])
-    data = MyUtils.map_remote(data, domain)
-    render :json => data
+  def fetch_project_info(project_path, target_configuration)
+    data = XcodeProject.fetch_target_info(project_path, target_configuration)
+    MyUtils.map_remote(data, request.protocol + request.host_with_port)
   end
 
   # 获取目前所有APP
@@ -82,10 +81,15 @@ class ProjectController < ApplicationController
 
   # 获取当前项目
   def fetch_current_project
-    app = App.find_app_with_branch(self.git.current_branch)
-    data = XcodeProject.fetch_target_info(self.project_path, app.company_code)
-    domain = request.protocol + request.host_with_port
-    data = MyUtils.map_remote(data, domain)
+    # app = App.find_app_with_branch(self.git.current_branch)
+    info = {
+      "targetName" => "ButlerForRemain",
+      "privateGroup" => "Butler/ButlerForRemain",
+      "assets" => "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
+      "headfile" => "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
+    }
+    target = XcodeProject::TargetConfiguration.new(info)
+    data = self.fetch_project_info('/Users/mashiro_jin/Desktop/LMWork/ButlerForFusion', target)
     render :json => data
   end
 
@@ -103,7 +107,7 @@ class ProjectController < ApplicationController
   def checkout_app
     if worktree_is_dirty
       response.status = 400
-      render :json => 'worktree is dirty!'
+      render :text => 'worktree is dirty!'
       return
     end
 
