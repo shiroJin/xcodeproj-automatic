@@ -15,7 +15,7 @@ module MyUtils
     unless Dir.exist? path
       Dir.mkdir(path)
     end
-    return dir_path
+    return path
   end
 
 end

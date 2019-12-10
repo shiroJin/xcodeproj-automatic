@@ -10,14 +10,12 @@ Rails.application.routes.draw do
   get 'project/app-form', to: 'project#fetch_project_form'
   get 'project/projectInfo', to: 'project#fetch_project_info'
   get 'project/current', to: 'project#fetch_current_project'
+  get 'project/repositoryInfo', to: 'project#get_repository_info'
 
   post 'project/addProject', to: 'project#add_new_project'
   post 'project/editProject', to: 'project#edit_project'
 
-  #worktree
-  get 'project/tags', to: 'project#fetch_avaiable_tags'
-  get 'project/isDirty', to: 'project#is_dirty'
-
+  #worktree command
   post 'project/checkout', to: 'project#checkout_app'
   post 'project/pull', to: 'project#pull'
   post 'project/pullCurrent', to: 'project#pull_single_branch'

@@ -2,35 +2,18 @@
   {
     "displayName": "一米智服",
     "code": "mh",
-    "targetName": "ButlerForRemain",
     "branchName": "test",
-    "privateGroup": "Butler/ButlerForRemain",
-    "assets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
-    "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
-  },
-  {
-    "displayName": "园区管理",
-    "code": "yz",
-    "targetName": "ButlerForTown",
-    "branchName": "test",
-    "privateGroup": "Butler/ButlerForTown",
-    "assets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
-    "headfile": "Butler/ButlerForTown/SCAppConfigForTownButler.h"
-  },
-  {
-    "displayName": "小镇管理",
-    "code": "wg",
-    "targetName": "ButlerForZhwg",
-    "branchName": "proj-zhwg-snapshot",
-    "privateGroup": "Butler/ButlerForZhwg",
-    "assets": "Butler/ButlerForZhwg/ImageForZhwgButler.xcassets",
-    "headfile": "Butler/ButlerForZhwg/SCAppConfigForZhwgButler.h"
-  },
-  {
-    "displayName": "慧管理",
-    "code": "ss",
-    "targetName": "Butler",
-    "branchName": "proj-xyjnh-snapshot",
-    "privateGroup": "Butler"
+    "enterprise" : {
+      "targetName": "ButlerForRemain",
+      "privateGroup": "Butler/ButlerForRemain",
+      "assets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
+      "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
+    },
+    "store" : {
+      "targetName": "ButlerForRemainStore",
+      "privateGroup": "Butler/ButlerForRemain",
+      "assets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
+      "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButlerStore.h"
+    }
   }
 ]

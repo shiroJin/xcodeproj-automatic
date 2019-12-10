@@ -272,7 +272,7 @@ module XcodeProject
     info = Hash.new
 
     proj = Xcodeproj::Project.open(xcodeproj_file(project_path))
-    target = proj.targets.find { |target| target.display_name == app.target_name }
+    target = proj.targets.find { |target| target.display_name == app.enterprise_configuration.target }
     build_settings = target.build_settings('Distribution')
     
     plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
@@ -291,8 +291,8 @@ module XcodeProject
       info['CFBundleVersion'] = build_settings['CURRENT_PROJECT_VERSION']
     end
 
-    private_group = File.join(project_path, app.private_group)
-    headfile_path = File.join(project_path, app.headfile)
+    private_group = File.join(project_path, app.enterprise_configuration.private_group)
+    headfile_path = File.join(project_path, app.enterprise_configuration.headfile)
     headfile = HeadFile.load(headfile_path)
     info = info.merge(headfile["DISTRIBUTION"])
 

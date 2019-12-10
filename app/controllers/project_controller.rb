@@ -4,17 +4,20 @@ require_relative '../script/myUtils'
 require 'git'
 
 class ProjectController < ApplicationController
-  @@project_path = File.join(MyUtils.workspace_path, 'ButlerForFusion')
 
   def git
-    @git ||= Git.open(@@project_path)
+    @git ||= Git.open(self.project_path)
+  end
+
+  def project_path
+    @project_path ||= File.join(MyUtils.workspace_path, 'ButlerForFusion')
   end
 
   # 新增分支及target
   def add_new_project
     company_code = params["kCompanyCode"]
     branch_name = "proj-#{company_code}-snapshot"
-    project_path = @@project_path
+    project_path = self.project_path
     tag_name = params["tag"]
 
     if branch = self.git.branches.find { |b| b.name == branch_name }
@@ -25,7 +28,7 @@ class ProjectController < ApplicationController
       raise "tag #{tag_name} is not existed" unless tag
     end
 
-    cmd = "git --git-dir=#{@@project_path}/.git -b #{branch_name} #{tag_name}"
+    cmd = "git --git-dir=#{self.project_path}/.git checkout -b #{branch_name} #{tag_name}"
     exec cmd
     raise "checkout new branch failed" if self.git.current_branch.name != branch_name
 
@@ -54,22 +57,21 @@ class ProjectController < ApplicationController
 
   # 编辑项目
   def edit_project
-    XcodeProject.edit_project(@@project_path, params['companyCode'], params['updateInfo'].as_json)
+    XcodeProject.edit_project(self.project_path, params['companyCode'], params['updateInfo'].as_json)
     render()
   end
 
   # 获取项目信息
   def fetch_project_info
     domain = request.protocol + request.host_with_port
-    data = XcodeProject.fetch_target_info(@@project_path, params["companyCode"])
+    data = XcodeProject.fetch_target_info(self.project_path, params["companyCode"])
     data = MyUtils.map_remote(data, domain)
     render :json => data
   end
 
   # 获取目前所有APP
   def fetch_project_list
-    project_list = JSON.load(Rails.root.join('public', 'app.json'))
-    render :json => project_list
+    JSON.load(Rails.root.join('public', 'app.json'))
   end
 
   # 新增项目所需要的表单
@@ -81,7 +83,7 @@ class ProjectController < ApplicationController
   # 获取当前项目
   def fetch_current_project
     app = App.find_app_with_branch(self.git.current_branch)
-    data = XcodeProject.fetch_target_info(@@project_path, app.company_code)
+    data = XcodeProject.fetch_target_info(self.project_path, app.company_code)
     domain = request.protocol + request.host_with_port
     data = MyUtils.map_remote(data, domain)
     render :json => data
@@ -94,7 +96,7 @@ class ProjectController < ApplicationController
     end.map do |tag|
       tag.name
     end
-    render :json => data
+    return data
   end
 
   #切换项目
@@ -113,14 +115,14 @@ class ProjectController < ApplicationController
 
   #下拉代码
   def pull
-    cmd = "git --git-dir=#{@@project_path}/.git pull 2>&1"
+    cmd = "git --git-dir=#{self.project_path}/.git pull 2>&1"
     IO.popen(cmd) { |result|
-      render :json => { 'msg' => result.read }
+      render :json => { :msg => result.read }
     }
   end
 
   def worktree_is_dirty
-    cmd = "git --git-dir=#{@@project_path}/.git --work-tree=#{@@project_path} status"
+    cmd = "git --git-dir=#{self.project_path}/.git --work-tree=#{self.project_path} status"
     IO.popen(cmd) { |result|
       message = result.read
       dirty = false
@@ -128,18 +130,6 @@ class ProjectController < ApplicationController
         dirty = true
       end
       return dirty
-    }
-  end
-
-  def is_dirty
-    cmd = "git --git-dir=#{@@project_path}/.git --work-tree=#{@@project_path} status"
-    IO.popen(cmd) { |result|
-      message = result.read
-      dirty = false
-      if message.index('Untracked files') || message.index('Changes not staged')
-        dirty = true
-      end
-      render :json => { 'dirty' => dirty, 'msg' => message }
     }
   end
 
@@ -163,6 +153,14 @@ class ProjectController < ApplicationController
   def pull_single_branch
     self.git.pull('origin', self.git.current_branch)
     render()
+  end
+
+  def get_repository_info
+    dirty = self.worktree_is_dirty
+    tags = self.fetch_avaiable_tags
+    project_list = self.fetch_project_list
+    data = { :dirty => dirty, :tags => tags, :project_list => project_list }
+    render :json => data
   end
 
 end

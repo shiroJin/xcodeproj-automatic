@@ -1,31 +1,36 @@
 {
-  "Tag": "",
-  "PRODUCT_BUNDLE_IDENTIFIER": "",
-  "CFBundleDisplayName": "", 
-  "CFBundleShortVersionString": "", 
-  "CFBundleVersion": "", 
-  "kAPISalt": "", 
-  "kAPIVersion": "", 
-  "kCompanyCode": "", 
-  "kDistributioneBaseCommonUrl": "", 
-  "kJPushAppKeyString": "", 
-  "kJPushChannelID": "", 
-  "kMobiletype": "", 
-  "kPlateNumberScanDevcode": "",
-  "kIDCardScanDevcode": "",
-  "kTencentQQAppId": "", 
-  "kTencentQQAppKey": "", 
-  "kUMengAppKeyString": "", 
-  "kUMengChannelID": "", 
-  "kVersionCheckType": "",
-  "kWechatAppId": "", 
-  "kWechatAppKey": "",
-  "kAppUpdateUrl": "",
-  "images": {
-    "AppIcon": [], 
-    "LaunchImage": []
+  "pbxproj" : {
+    "PRODUCT_BUNDLE_IDENTIFIER" : ""
   },
-  "files": {
+  "plist" : {
+    "CFBundleDisplayName" : "",
+    "CFBundleShortVersionString" : "",
+    "CFBundleVersion" : ""
+  },
+  "headfile" : {
+    "kDistributioneBaseCommonUrl" : "",
+    "kJPushAppKeyString" : "",
+    "kJPushChannelID" : "",
+    "kMobiletype" : "",
+    "kPlateNumberScanDevcode" : "",
+    "kIDCardScanDevcode" : "",
+    "kTencentQQAppId" : "",
+    "kTencentQQAppKey" : "",
+    "kUMengAppKeyString" : "",
+    "kUMengChannelID" : "",
+    "kVersionCheckType" : "",
+    "kWechatAppId" : "",
+    "kWechatAppKey" : "",
+    "kAppUpdateUrl" : "",
+    "kAPISalt" : "",
+    "kAPIVersion" : "",
+    "kCompanyCode" : ""  
+  },
+  "image asset" : {
+    "AppIcon" : [],
+    "LaunchImage" : []
+  },
+  "files" : {
     "wtproject.lsc" : ""
   }
 }

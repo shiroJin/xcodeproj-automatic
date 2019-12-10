@@ -2,20 +2,30 @@ require 'json'
 
 module App
 
-  class AppItem
-    attr_accessor :display_name, :target_name, :private_group, :assets, :headfile, :branch_name, :company_code
+  class MethodConfiguration
+    attr_reader :target, :private_group, :image_assets, :headfile
+
     def initialize(hash)
-      @display_name = hash["displayName"]
-      @target_name = hash["targetName"]
       @private_group = hash["privateGroup"]
-      @assets = hash["assets"]
+      @image_assets = hash["assets"]
       @headfile = hash["headfile"]
-      @branch_name = hash["branchName"]
-      @company_code = hash["code"]
+      @target = hash["targetName"]
     end
   end
 
-  def App.find_app(company_code)
+  class AppItem
+    attr_reader :display_name, :branch_name, :company_code, :enterprise_configuration, :store_configuration
+    
+    def initialize(hash)
+      @display_name = hash["displayName"]
+      @branch_name = hash["branchName"]
+      @company_code = hash["code"]
+      @enterprise_configuration = MethodConfiguration.new(hash['enterprise'])
+      @store_configuration = MethodConfiguration.new(hash['store'])
+    end
+  end
+
+  def self.find_app(company_code)
     app_list = JSON.load(Rails.root.join('public', 'app.json'))
     app_hash = app_list.find{ |hash| hash["code"] == company_code }
     unless app_hash
