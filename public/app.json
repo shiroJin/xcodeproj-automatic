@@ -2,7 +2,7 @@
   {
     "displayName": "一米智服",
     "code": "mh",
-    "branchName": "test",
+    "branchName": "rails",
     "enterprise" : {
       "targetName": "ButlerForRemain",
       "privateGroup": "Butler/ButlerForRemain",
