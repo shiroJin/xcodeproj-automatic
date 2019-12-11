@@ -81,15 +81,8 @@ class ProjectController < ApplicationController
 
   # 获取当前项目
   def fetch_current_project
-    # app = App.find_app_with_branch(self.git.current_branch)
-    info = {
-      "targetName" => "ButlerForRemain",
-      "privateGroup" => "Butler/ButlerForRemain",
-      "assets" => "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
-      "headfile" => "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
-    }
-    target = XcodeProject::TargetConfiguration.new(info)
-    data = self.fetch_project_info('/Users/mashiro_jin/Desktop/LMWork/ButlerForFusion', target)
+    app = App.find_app_with_branch(self.git.current_branch)
+    data = self.fetch_project_info(self.project_path, app.store_configuration)
     render :json => data
   end
 

@@ -8,6 +8,10 @@ require_relative './TargetConfiguration'
 
 module XcodeProject
 
+  IMAGESET_EXT = 'imageset'
+  APPICONSET_EXT = 'appiconset'
+  LAUNCHIMAGE_EXT = 'launchimage'
+
   # @return xcodeproj file name in directory
   def XcodeProject.xcodeproj_file(dir)
     file_name = Dir.entries(dir).find { |entry| entry.index('xcodeproj') }
@@ -296,6 +300,8 @@ module XcodeProject
     # pbxproj information
     pbxproj_info = Hash.new
     pbxproj_info["PRODUCT_BUNDLE_IDENTIFIER"] = build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
+    pbxproj_info["CODE_SIGN_IDENTITY"] = build_settings['CODE_SIGN_IDENTITY']
+    pbxproj_info['PROVISIONING_PROFILE_SPECIFIER'] = build_settings['PROVISIONING_PROFILE_SPECIFIER']
     result["pbxproj"] = pbxproj_info
 
     # plist information
@@ -306,7 +312,7 @@ module XcodeProject
     fields.each do |field|
       plist_info[field] = info_plist[field]
     end
-    # in xcode11, CFBundleShortVersionString may get $(MARKETING_VERSION), CFBundleVersion get
+    # in xcode 11, CFBundleShortVersionString may get $(MARKETING_VERSION), CFBundleVersion get
     # $(CURRENT_PROJECT_VERSION)
     if plist_info['CFBundleShortVersionString'] == '$(MARKETING_VERSION)'
       plist_info['CFBundleShortVersionString'] = build_settings['MARKETING_VERSION']
@@ -329,15 +335,30 @@ module XcodeProject
       filename = entry.split('.').first
       extname = entry.split('.').last
       absolute_path = File.join(image_assets_path, entry)
-      if ['appiconset', 'launchimage', 'imageset'].include? extname
-        path = File.join(absolute_path, Dir.entries(absolute_path).find { |f| f.index('png') })
-        path = '#{domain}/projectFile?src=' + path
-        assets_info[filename] = path
+      if [APPICONSET_EXT, LAUNCHIMAGE_EXT, IMAGESET_EXT].include? extname
+        content_path = File.join(absolute_path, 'Contents.json')
+        if File.exist? content_path
+          content_json = JSON.load(File.open(content_path))
+          assets = Hash.new
+          content_json["images"].each do |item|
+            key = nil
+            if extname == APPICONSET_EXT
+              key = "#{item["size"]}@#{item["scale"]}"
+            elsif extname == LAUNCHIMAGE_EXT
+              key = "#{item["subtype"]}@#{item["scale"]}"
+            elsif extname == IMAGESET_EXT
+              key = "@#{item["scale"]}"
+            end
+            value = '#{domain}/projectFile?src=' + File.join(absolute_path, item['filename'])
+            assets[key] = value
+          end
+          assets_info[filename] = assets
+        end
       end
     end
-    result['image assets'] = assets_info
+    result['imageAssets'] = assets_info
 
-    return result    
+    return result
   end
 
   def XcodeProject.build_configuration(project_path, target_name, name="Distribution")

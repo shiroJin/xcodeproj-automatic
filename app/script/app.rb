@@ -10,8 +10,8 @@ module App
       @display_name = hash["displayName"]
       @branch_name = hash["branchName"]
       @company_code = hash["code"]
-      @enterprise_configuration = TargetConfiguration.new(hash['enterprise'])
-      @store_configuration = TargetConfiguration.new(hash['store'])
+      @enterprise_configuration = XcodeProject::TargetConfiguration.new(hash['enterprise'])
+      @store_configuration = XcodeProject::TargetConfiguration.new(hash['store'])
     end
   end
 
