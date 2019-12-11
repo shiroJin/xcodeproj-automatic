@@ -5,12 +5,11 @@ require 'fileutils'
 require_relative './HeadFile'
 require_relative './ImageAsset'
 require_relative './TargetConfiguration'
+require_relative './projectForm'
 
 module XcodeProject
 
-  IMAGESET_EXT = 'imageset'
-  APPICONSET_EXT = 'appiconset'
-  LAUNCHIMAGE_EXT = 'launchimage'
+  IMAGE_ASSETS_EXT = ['imageset', 'appiconset', 'launchimage']
 
   # @return xcodeproj file name in directory
   def XcodeProject.xcodeproj_file(dir)
@@ -157,11 +156,20 @@ module XcodeProject
     return target
   end
 
-  def XcodeProject.edit_target(project, root_path, app, update_info)
-    target = project.targets.find { |item| item.name == app.target_name }
+  # edit target
+  #
+  # @param [String] project_path
+  # @param [TargetConfiguration] target_configuration
+  # @param [ProjectForm] update_info
+  #
+  def XcodeProject.edit_target(project_path, target_configuration, update_info)
+    project = Xcodeproj::Project.open(xcodeproj_file(project_path))
+    target = project.targets.find { |item| item.name == target_configuration.target }
+    raise "❗target #{target_name} not exist" unless target
+
     # image resource
-    assets_path = File.join(root_path, app.assets)
-    if images = update_info["images"]
+    assets_path = File.join(project_path, target_configuration.image_assets)
+    if images = update_info.image_assets
       if icon_paths = images["AppIcon"]
         ImageAsset.new_icon(icon_paths, assets_path)
       end
@@ -169,76 +177,79 @@ module XcodeProject
         ImageAsset.new_launch(launch_paths, assets_path)
       end
     end
+
     # file resource
     pending_files = Array.new
-    files = update_info['files']
-    if files
+    if files = update_info.files
       files.map { |file, path|
-        if not path.empty?
-          dest_path = File.join(target_group_path, file)
+        unless path.empty?
+          dest_path = File.join(build_configuration.private_group, file)
           FileUtils.cp(path, dest_path)
           pending_files << file
         end
       }
     end
     target.add_resources(pending_files)
+
     # info.plist
-    build_settings = target.build_settings('Distribution')
-    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', root_path)
+    build_settings = target.build_settings("Distribution")
+    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
     info_plist = Plist.parse_xml(plist_path)
-    info_plist["CFBundleDisplayName"] = update_info["CFBundleDisplayName"] if update_info["CFBundleDisplayName"]
-    info_plist["CFBundleShortVersionString"] = update_info["CFBundleShortVersionString"] if update_info["CFBundleShortVersionString"]
-    info_plist["CFBundleVersion"] = update_info["CFBundleVersion"] if update_info["CFBundleVersion"]
-    # url types
+
+    if display_name = update_info.plist["CFBundleDisplayName"]
+      info_plist["CFBundleDisplayName"] = update_info["CFBundleDisplayName"] 
+    end
+    if short_version = update_info.plist["CFBundleShortVersionString"]
+      info_plist["CFBundleShortVersionString"] = short_version
+    end
+    if build_version = update_info.plist["CFBundleVersion"]
+      info_plist["CFBundleVersion"] = build_version
+    end
+    
     url_types = info_plist["CFBundleURLTypes"]
     unless url_types
       url_types = Array.new
       info_plist["CFBundleURLTypes"] = url_types
     end
-    types = {
-             'kWechatAppId' => 'wx', 
-             'kTencentQQAppId' => 'tencent', 
-             'PRODUCT_BUNDLE_IDENTIFIER' => 'product'
-            }
+    types = { 'kWechatAppId' => 'wx', 
+              'kTencentQQAppId' => 'tencent', 
+              'PRODUCT_BUNDLE_IDENTIFIER' => 'product' }
     types.map { |key, identify|
-      scheme = update_info[key]
-      if scheme
+      if scheme = target_configuration.headfile[key]
         url_type = url_types.find { |item| item['CFBundleURLName'] == identify }
         unless url_type
-          url_type = {
-                      'CFBundleTypeRole' => 'Editor', 
-                      'CFBundleURLName' => identify, 
-                      'CFBundleURLSchemes' => Array.new
-                     }
+          url_type = { 'CFBundleTypeRole' => 'Editor', 
+                       'CFBundleURLName' => identify, 
+                       'CFBundleURLSchemes' => Array.new }
           url_types << url_type
         end
-        scheme = 'tencent' + scheme if identify == 'tencent'
+        if identify == 'tencent'
+          scheme = 'tencent' + scheme
+        end
         url_type['CFBundleURLSchemes'] = Array[scheme]
       end
     }
     IO.write(plist_path, info_plist.to_plist)
 
     # headfile
-    headfile = HeadFile.load(File.join(root_path, app.headfile))
+    headfile = HeadFile.load(File.join(project_path, target_configuration.headfile))
     distribution_hash = headfile["DISTRIBUTION"]
-    headfile_fields = ['kDistributioneBaseCommonUrl', 'kJPushAppKeyString', 'kJPushChannelID', 'kUMengAppKeyString', 'kUMengChannelID', 'kWechatAppId', 'kWechatAppKey', 'kTencentQQAppId', 'kTencentQQAppKey', 'kAPIVersion', 'kAPISalt', 'kMobiletype', 'kCompanyCode', 'kVersionCheckType', 'kIDCardScanDevcode', 'kPlateNumberScanDevcode']
-    headfile_fields.map { |field|
-      value = distribution_hash[field]
-      value = update_info[field] if update_info[field]
-      value = '' unless value
-      distribution_hash[field] = value
-    }
-    HeadFile.dump(File.join(root_path, app.headfile), headfile)
+    update_info.headfile.each do |key, value|
+      distribution_hash[key] = value
+    end
+    HeadFile.dump(File.join(project_path, target_configuration.headfile), headfile)
 
     # build settings
-    bundle_id = update_info['PRODUCT_BUNDLE_IDENTIFIER']
-    if bundle_id
-      target.build_configurations.each do |config|
-        build_settings["PRODUCT_BUNDLE_IDENTIFIER"] = bundle_id
+    if pbxproj_info = update_info.pbxproj
+      pbxproj_info.each do |key, value|
+        target.build_configurations.each do |config|
+          build_settings[key] = value
+        end
       end
     end
 
     project.save
+
   end
 
   # create_target method do follow things for you
@@ -274,20 +285,19 @@ module XcodeProject
 
   # edit project's config, such as http address, project version, build version, etc.
   #
+  # @param [String] project_path
+  # @param [String] company_code
+  # @param [Hash] update_info
+  #
   def XcodeProject.edit_project(project_path, company_code, update_info)
     app = App.find_app(company_code)
-  
-    project = Xcodeproj::Project.open(xcodeproj_file(project_path))
-    target = project.targets.find { |item| item.name == app.target_name }
-    raise "❗target #{target_name} not exist" unless target
-
-    edit_target(project, project_path, app, update_info)
+    form = ProjectForm.new(update_info)
+    edit_target(project_path, app.enterprise_configuration, form)
   end
 
   # fetch target info from project
   #
   # @param [String] project_path
-  #
   # @param [TargetConfiguration] target_configuration
   #
   def XcodeProject.fetch_target_info(project_path, target_configuration)
@@ -332,25 +342,16 @@ module XcodeProject
     assets_info = Hash.new
     image_assets_path = File.join(project_path, target_configuration.image_assets)
     Dir.entries(image_assets_path).each do |entry|
-      filename = entry.split('.').first
-      extname = entry.split('.').last
+      filename, extname = entry.split('.')
       absolute_path = File.join(image_assets_path, entry)
-      if [APPICONSET_EXT, LAUNCHIMAGE_EXT, IMAGESET_EXT].include? extname
+      if IMAGE_ASSETS_EXT.include? extname
         content_path = File.join(absolute_path, 'Contents.json')
         if File.exist? content_path
           content_json = JSON.load(File.open(content_path))
-          assets = Hash.new
+          assets = Array.new
           content_json["images"].each do |item|
-            key = nil
-            if extname == APPICONSET_EXT
-              key = "#{item["size"]}@#{item["scale"]}"
-            elsif extname == LAUNCHIMAGE_EXT
-              key = "#{item["subtype"]}@#{item["scale"]}"
-            elsif extname == IMAGESET_EXT
-              key = "@#{item["scale"]}"
-            end
             value = '#{domain}/projectFile?src=' + File.join(absolute_path, item['filename'])
-            assets[key] = value
+            assets << value
           end
           assets_info[filename] = assets
         end

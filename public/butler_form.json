@@ -1,6 +1,7 @@
 {
   "pbxproj" : {
-    "PRODUCT_BUNDLE_IDENTIFIER" : ""
+    "PRODUCT_BUNDLE_IDENTIFIER" : "",
+    "PROVISIONING_PROFILE_SPECIFIER" : ""
   },
   "plist" : {
     "CFBundleDisplayName" : "",
@@ -26,7 +27,7 @@
     "kAPIVersion" : "",
     "kCompanyCode" : ""  
   },
-  "image asset" : {
+  "imageAssets" : {
     "AppIcon" : [],
     "LaunchImage" : []
   },

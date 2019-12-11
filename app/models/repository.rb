@@ -1,6 +1,6 @@
 module Repository
 
-  class Base
+  class Repository
     attr_accessor :remote_url, :name
     def initialize(name, remote_url)
       @remote_url = remote_url

@@ -58,7 +58,8 @@ class ProjectController < ApplicationController
 
   # 编辑项目
   def edit_project
-    XcodeProject.edit_project(self.project_path, params['companyCode'], params['updateInfo'].as_json)
+    update_form = params["form"]
+    XcodeProject.edit_project(self.project_path, 'mh', update_form.as_json)
     render()
   end
 
@@ -82,7 +83,7 @@ class ProjectController < ApplicationController
   # 获取当前项目
   def fetch_current_project
     app = App.find_app_with_branch(self.git.current_branch)
-    data = self.fetch_project_info(self.project_path, app.store_configuration)
+    data = self.fetch_project_info(self.project_path, app.enterprise_configuration)
     render :json => data
   end
 

@@ -1,18 +1,6 @@
 require 'Liquid'
 
 module HeadFile
-  def HeadFile.project_fields
-    return [
-      'CFBundleDisplayName',
-      'CFBundleShortVersionString',
-      'CFBundleVersion',
-      'PRODUCT_BUNDLE_IDENTIFIER',
-      'images',
-      'files',
-      'projectPath',
-      'tag'
-    ]
-  end
 
   def HeadFile.load(file_path)
     return Hash.new unless File.readable?(file_path)
