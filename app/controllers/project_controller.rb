@@ -1,6 +1,5 @@
 require_relative '../script/app'
 require_relative '../script/XcodeProject'
-require_relative '../script/TargetConfiguration'
 require_relative '../script/myUtils'
 require 'git'
 
@@ -59,7 +58,8 @@ class ProjectController < ApplicationController
   # 编辑项目
   def edit_project
     update_form = params["form"]
-    XcodeProject.edit_project(self.project_path, 'mh', update_form.as_json)
+    form = MyUtils.recover_file_path(update_form.as_json)
+    XcodeProject.edit_project(self.project_path, 'town', form)
     render()
   end
 

@@ -4,14 +4,37 @@ require 'plist'
 require 'fileutils'
 require_relative './HeadFile'
 require_relative './ImageAsset'
-require_relative './TargetConfiguration'
-require_relative './projectForm'
 
 module XcodeProject
+
+  class ProjectForm
+    attr_accessor :pbxproj, :plist, :headfile, :image_assets, :files
+
+    def initialize(hash)
+      @pbxproj = hash["pbxproj"]
+      @plist = hash["plist"]
+      @headfile = hash["headfile"]
+      @image_assets = hash["imageAssets"]
+      @files = hash["files"]
+    end
+
+  end
+
+  class TargetConfiguration
+    attr_reader :target, :private_group, :image_assets, :headfile
+
+    def initialize(hash)
+      @private_group = hash["privateGroup"]
+      @image_assets = hash["assets"]
+      @headfile = hash["headfile"]
+      @target = hash["targetName"]
+    end
+  end
 
   IMAGE_ASSETS_EXT = ['imageset', 'appiconset', 'launchimage']
 
   # @return xcodeproj file name in directory
+  #
   def XcodeProject.xcodeproj_file(dir)
     file_name = Dir.entries(dir).find { |entry| entry.index('xcodeproj') }
     return File.join(dir, file_name)
@@ -160,16 +183,16 @@ module XcodeProject
   #
   # @param [String] project_path
   # @param [TargetConfiguration] target_configuration
-  # @param [ProjectForm] update_info
+  # @param [ProjectForm] update_form
   #
-  def XcodeProject.edit_target(project_path, target_configuration, update_info)
+  def XcodeProject.edit_target(project_path, target_configuration, update_form)
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     target = project.targets.find { |item| item.name == target_configuration.target }
     raise "❗target #{target_name} not exist" unless target
 
     # image resource
     assets_path = File.join(project_path, target_configuration.image_assets)
-    if images = update_info.image_assets
+    if images = update_form.image_assets
       if icon_paths = images["AppIcon"]
         ImageAsset.new_icon(icon_paths, assets_path)
       end
@@ -180,67 +203,80 @@ module XcodeProject
 
     # file resource
     pending_files = Array.new
-    if files = update_info.files
-      files.map { |file, path|
-        unless path.empty?
-          dest_path = File.join(build_configuration.private_group, file)
+    if files = update_form.files
+      exist_files = target.resources_build_phase.files
+      files.map { |filename, path|
+        dest_file = exist_files.find { |f| f.display_name == filename }
+        if path.empty? && dest_file
+          target.resources_build_phase.remove_build_file(dest_file)
+        end
+        if path && dest_file
+          dest_path = File.join(project_path, dest_file.full_path)
           FileUtils.cp(path, dest_path)
-          pending_files << file
+        end
+        if path && !dest_file
+          dest_path = File.join(project_path, target_configuration.private_group, file)
+          FileUtils.cp(path, dest_path)
+          pending_files << filename
         end
       }
     end
     target.add_resources(pending_files)
 
     # info.plist
-    build_settings = target.build_settings("Distribution")
-    plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
-    info_plist = Plist.parse_xml(plist_path)
+    if plist = update_form.plist
+      build_settings = target.build_settings("Distribution")
+      plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
+      info_plist = Plist.parse_xml(plist_path)
 
-    if display_name = update_info.plist["CFBundleDisplayName"]
-      info_plist["CFBundleDisplayName"] = update_info["CFBundleDisplayName"] 
-    end
-    if short_version = update_info.plist["CFBundleShortVersionString"]
-      info_plist["CFBundleShortVersionString"] = short_version
-    end
-    if build_version = update_info.plist["CFBundleVersion"]
-      info_plist["CFBundleVersion"] = build_version
-    end
-    
-    url_types = info_plist["CFBundleURLTypes"]
-    unless url_types
-      url_types = Array.new
-      info_plist["CFBundleURLTypes"] = url_types
-    end
-    types = { 'kWechatAppId' => 'wx', 
-              'kTencentQQAppId' => 'tencent', 
-              'PRODUCT_BUNDLE_IDENTIFIER' => 'product' }
-    types.map { |key, identify|
-      if scheme = target_configuration.headfile[key]
-        url_type = url_types.find { |item| item['CFBundleURLName'] == identify }
-        unless url_type
-          url_type = { 'CFBundleTypeRole' => 'Editor', 
-                       'CFBundleURLName' => identify, 
-                       'CFBundleURLSchemes' => Array.new }
-          url_types << url_type
-        end
-        if identify == 'tencent'
-          scheme = 'tencent' + scheme
-        end
-        url_type['CFBundleURLSchemes'] = Array[scheme]
+      if display_name = update_form.plist["CFBundleDisplayName"]
+        info_plist["CFBundleDisplayName"] = update_form["CFBundleDisplayName"] 
       end
-    }
-    IO.write(plist_path, info_plist.to_plist)
+      if short_version = update_form.plist["CFBundleShortVersionString"]
+        info_plist["CFBundleShortVersionString"] = short_version
+      end
+      if build_version = update_form.plist["CFBundleVersion"]
+        info_plist["CFBundleVersion"] = build_version
+      end
+      
+      url_types = info_plist["CFBundleURLTypes"]
+      unless url_types
+        url_types = Array.new
+        info_plist["CFBundleURLTypes"] = url_types
+      end
+      types = { 'kWechatAppId' => 'wx', 
+                'kTencentQQAppId' => 'tencent', 
+                'PRODUCT_BUNDLE_IDENTIFIER' => 'product' }
+      types.map { |key, identify|
+        if scheme = target_configuration.headfile[key]
+          url_type = url_types.find { |item| item['CFBundleURLName'] == identify }
+          unless url_type
+            url_type = { 'CFBundleTypeRole' => 'Editor', 
+                        'CFBundleURLName' => identify, 
+                        'CFBundleURLSchemes' => Array.new }
+            url_types << url_type
+          end
+          if identify == 'tencent'
+            scheme = 'tencent' + scheme
+          end
+          url_type['CFBundleURLSchemes'] = Array[scheme]
+        end
+      }
+      IO.write(plist_path, info_plist.to_plist)
+    end
 
     # headfile
-    headfile = HeadFile.load(File.join(project_path, target_configuration.headfile))
-    distribution_hash = headfile["DISTRIBUTION"]
-    update_info.headfile.each do |key, value|
-      distribution_hash[key] = value
+    if headfile_form = update_form.headfile
+      headfile = HeadFile.load(File.join(project_path, target_configuration.headfile))
+      distribution_hash = headfile["DISTRIBUTION"]
+      update_form.each do |key, value|
+        distribution_hash[key] = value
+      end
+      HeadFile.dump(File.join(project_path, target_configuration.headfile), headfile)
     end
-    HeadFile.dump(File.join(project_path, target_configuration.headfile), headfile)
 
     # build settings
-    if pbxproj_info = update_info.pbxproj
+    if pbxproj_info = update_form.pbxproj
       pbxproj_info.each do |key, value|
         target.build_configurations.each do |config|
           build_settings[key] = value
@@ -260,8 +296,7 @@ module XcodeProject
   # 3. edit Podfile file, common config file
   #
   # @param [String] project_path
-  #
-  # @param configuration
+  # @param [Hash] configuration
   #
   def XcodeProject.new_target(project_path, configuration)
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
@@ -280,28 +315,29 @@ module XcodeProject
     app = App::AppItem.new(app_hash)
     # create_target_template(project, project_path, target_name, company_code, 'ButlerForRemain')
     edit_target(project, project_path, app, configuration)
-    App.add_app(app_hash)
   end
 
   # edit project's config, such as http address, project version, build version, etc.
   #
   # @param [String] project_path
   # @param [String] company_code
-  # @param [Hash] update_info
+  # @param [Hash] update_form
   #
-  def XcodeProject.edit_project(project_path, company_code, update_info)
+  def XcodeProject.edit_project(project_path, company_code, update_form)
     app = App.find_app(company_code)
-    form = ProjectForm.new(update_info)
-    edit_target(project_path, app.enterprise_configuration, form)
+    form = ProjectForm.new(update_form)
+    configuration = TargetConfiguration.new(app.enterprise_configuration)
+    edit_target(project_path, configuration, form)
   end
 
   # fetch target info from project
   #
   # @param [String] project_path
-  # @param [TargetConfiguration] target_configuration
+  # @param [Hash] configuration
   #
-  def XcodeProject.fetch_target_info(project_path, target_configuration)
-    result = Hash.new
+  def self.fetch_target_info(project_path, configuration)
+    target_configuration = TargetConfiguration.new(configuration)
+    standard_form = JSON.load(Rails.root.join('public', 'butler_form.json'))
 
     proj = Xcodeproj::Project.open(xcodeproj_file(project_path))
     target = proj.targets.find { |target| target.display_name == target_configuration.target }
@@ -312,7 +348,7 @@ module XcodeProject
     pbxproj_info["PRODUCT_BUNDLE_IDENTIFIER"] = build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
     pbxproj_info["CODE_SIGN_IDENTITY"] = build_settings['CODE_SIGN_IDENTITY']
     pbxproj_info['PROVISIONING_PROFILE_SPECIFIER'] = build_settings['PROVISIONING_PROFILE_SPECIFIER']
-    result["pbxproj"] = pbxproj_info
+    standard_form["pbxproj"] = standard_form["pbxproj"].merge(pbxproj_info)
 
     # plist information
     plist_info = Hash.new
@@ -330,13 +366,13 @@ module XcodeProject
     if plist_info['CFBundleVersion'] == '$(CURRENT_PROJECT_VERSION)'
       plist_info['CFBundleVersion'] = build_settings['CURRENT_PROJECT_VERSION']
     end
-    result["plist"] = plist_info
+    standard_form["plist"] = standard_form["plist"].merge(plist_info)
 
     # headfile information
     headfile_path = File.join(project_path, target_configuration.headfile)
     headfile = HeadFile.load(headfile_path)
     headfile_info = headfile["DISTRIBUTION"]
-    result["headfile"] = headfile_info
+    standard_form["headfile"] = standard_form["headfile"].merge(headfile_info)
 
     # image asset information
     assets_info = Hash.new
@@ -357,9 +393,24 @@ module XcodeProject
         end
       end
     end
-    result['imageAssets'] = assets_info
+    standard_form['imageAssets'] = standard_form['imageAssets'].merge(assets_info)
 
-    return result
+    # file information
+    files_info = standard_form["files"]
+    files_info.keys.each do |filename|
+      file = target.resources_build_phase.files.find { |f| f.display_name == filename }
+      if file
+        file_path = File.join(project_path, file.file_ref.full_path)
+        files_info[filename] = remoteUrl(file_path)
+      end
+    end
+    standard_form['files'] = standard_form['files'].merge(files_info)
+
+    return standard_form
+  end
+
+  def self.remoteUrl(file_path)
+    return '#{domain}/projectFile?src=' + file_path
   end
 
   def XcodeProject.build_configuration(project_path, target_name, name="Distribution")

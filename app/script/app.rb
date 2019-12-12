@@ -1,5 +1,4 @@
 require 'json'
-require_relative './TargetConfiguration'
 
 module App
 
@@ -10,8 +9,8 @@ module App
       @display_name = hash["displayName"]
       @branch_name = hash["branchName"]
       @company_code = hash["code"]
-      @enterprise_configuration = XcodeProject::TargetConfiguration.new(hash['enterprise'])
-      @store_configuration = XcodeProject::TargetConfiguration.new(hash['store'])
+      @enterprise_configuration = hash['enterprise']
+      @store_configuration = hash['store']
     end
   end
 

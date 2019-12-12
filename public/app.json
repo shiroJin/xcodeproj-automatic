@@ -1,5 +1,21 @@
 [
   {
+    "displayName": "园区管理",
+    "code": "town",
+    "branchName": "rails",
+    "enterprise" : {
+      "targetName": "ButlerForTown",
+      "privateGroup": "Butler/ButlerForTown",
+      "assets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
+      "headfile": "Butler/ButlerForTown/SCAppConfigForTownButler.h"
+    },
+    "store" : {
+      "targetName": "ButlerForRemainStore",
+      "privateGroup": "Butler/ButlerForRemain",
+      "assets": "Butler/ButlerForRemain/ImageForTownButler.xcassets",
+      "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButlerStore.h"
+    }
+  }, {
     "displayName": "一米智服",
     "code": "mh",
     "branchName": "rails",

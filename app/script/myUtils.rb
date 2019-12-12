@@ -17,6 +17,17 @@ module MyUtils
     end
   end
 
+  def self.recover_file_path(data)
+    if data.instance_of? Hash
+      data.transform_values { |item| recover_file_path(item) }
+    elsif data.instance_of? Array
+      data.collect { |item| recover_file_path(item) }
+    elsif data.instance_of? String
+      filename = data.split('/').last
+      Rails.root.join('public', 'upload', filename)
+    end
+  end
+
   # @return workspace path
   #
   def self.workspace_path

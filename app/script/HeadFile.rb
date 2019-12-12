@@ -7,16 +7,17 @@ module HeadFile
 
     hash = Hash.new
     dict = Hash["DEBUG" => Hash.new, "RELEASE" => Hash.new, "DISTRIBUTION" => Hash.new]
-    dict.each do |key, value|
+    dict.each do |method, configuration|
       start = false
       IO.foreach(file_path) do |line|
-        if (/ifdef#{key}/.match(line.gsub(/\s/, '')))
+        if (/ifdef#{method}/.match(line.gsub(/\s/, '')))
           start = true
           next
         end
-        if start
+        if start && line.index('NSString')
           data = line.gsub(/\s/, '').gsub(/(staticNSString\*(const)?|@"|"|;|\n)/, '').split('=')
-          value[data[0]] = data[1] if data.length == 2
+          key, value = data
+          configuration[key] = value ? value : ""
         end
         if /endif/.match(line.gsub(/\s\t\n/, '')) and start
           break
