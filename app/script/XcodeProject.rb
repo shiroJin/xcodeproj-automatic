@@ -33,7 +33,10 @@ module XcodeProject
 
   IMAGE_ASSETS_EXT = ['imageset', 'appiconset', 'launchimage']
 
+  # find xcodeproj file
+  #
   # @return xcodeproj file name in directory
+  # @param [PathString] dir
   #
   def XcodeProject.xcodeproj_file(dir)
     file_name = Dir.entries(dir).find { |entry| entry.index('xcodeproj') }
@@ -179,63 +182,103 @@ module XcodeProject
     return target
   end
 
+  # @param [PBXTarget] pbxtarget
+  # @param [String] filename
+  # @param [PathString] filepath
+  # @param [PBXGroup] pbxgroup
+  #
+  def self.target_add_resouce(project_path, pbxtarget, filename, filepath, pbxgroup)
+    files = pbxtarget.resources_build_phase.files
+    file = files.find { |f| f.display_name == filename }
+
+    if filepath.empty? && file
+      target.resources_build_phase.remove_build_file(file)
+    end
+
+    if filepath && file
+      dest = File.join(project_path, file.file_ref.full_path)
+      FileUtils.cp(filepath, dest)
+    end
+
+    if filepath && !file
+      dest_path = File.join(project_path, pbxgroup.full_path, filename)
+      FileUtils.cp(filepath, dest)
+      file_ref = pbxgroup.new_reference(filename)
+      pbxtarget.add_resources([file_ref])
+    end
+  end
+
+  # put images into image assets
+  #
+  # @param [PathString] assets_dir
+  # @param [String] name
+  # @param [Array] paths
+  #
+  def self.target_add_image(assets_dir, name, paths)
+    if name == "AppIcon"
+      ImageAsset.new_icon(paths, assets_dir)
+    elsif name == "LaunchImage"
+      ImageAsset.new_launch(paths, assets_dir)
+    else
+      ImageAsset.add_imageset(name, paths, assets_dir)
+    end
+  end
+
+  # 根据路径返回文件组
+  #
+  # @param [PBXProject] project
+  # @param [PathString] group_path
+  #
+  def self.pbxgroup(project, group_path)
+    subPaths = group_path.split('/')
+    group = project.main_group
+    while subPaths.length > 0
+      name = subPaths.shift
+      group = group.groups.find { |g| g.display_name == name }
+    end
+    return group
+  end
+
   # edit target
   #
   # @param [String] project_path
   # @param [TargetConfiguration] target_configuration
-  # @param [ProjectForm] update_form
+  # @param [ProjectForm] form
   #
-  def XcodeProject.edit_target(project_path, target_configuration, update_form)
+  def XcodeProject.edit_target(project_path, target_configuration, form)
     project = Xcodeproj::Project.open(xcodeproj_file(project_path))
     target = project.targets.find { |item| item.name == target_configuration.target }
+    private_group = pbxgroup(project, target_configuration.private_group)
     raise "❗target #{target_name} not exist" unless target
 
-    # image resource
+    # handle image resource
     assets_path = File.join(project_path, target_configuration.image_assets)
-    if images = update_form.image_assets
-      if icon_paths = images["AppIcon"]
-        ImageAsset.new_icon(icon_paths, assets_path)
-      end
-      if launch_paths = images["LaunchImage"]
-        ImageAsset.new_launch(launch_paths, assets_path)
+    if images = form.image_assets
+      images.map do |name, paths|
+        target_add_image(assets_path, name, paths)
       end
     end
 
-    # file resource
-    pending_files = Array.new
-    if files = update_form.files
-      exist_files = target.resources_build_phase.files
-      files.map { |filename, path|
-        dest_file = exist_files.find { |f| f.display_name == filename }
-        if path.empty? && dest_file
-          target.resources_build_phase.remove_build_file(dest_file)
-        end
-        if path && dest_file
-          dest_path = File.join(project_path, dest_file.full_path)
-          FileUtils.cp(path, dest_path)
-        end
-        if path && !dest_file
-          dest_path = File.join(project_path, target_configuration.private_group, file)
-          FileUtils.cp(path, dest_path)
-          pending_files << filename
-        end
-      }
+    # handle file resource
+    if files = form.files
+      files.map do |name, path|
+        target_add_resouce(project_path, target, name, path, private_group)
+      end
     end
-    target.add_resources(pending_files)
 
     # info.plist
-    if plist = update_form.plist
+    if plist = form.plist
       build_settings = target.build_settings("Distribution")
       plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
       info_plist = Plist.parse_xml(plist_path)
 
-      if display_name = update_form.plist["CFBundleDisplayName"]
-        info_plist["CFBundleDisplayName"] = update_form["CFBundleDisplayName"] 
+      if display_name = form.plist["CFBundleDisplayName"]
+        info_plist["CFBundleDisplayName"] = form["CFBundleDisplayName"] 
       end
-      if short_version = update_form.plist["CFBundleShortVersionString"]
+      if short_version = form.plist["CFBundleShortVersionString"]
         info_plist["CFBundleShortVersionString"] = short_version
       end
-      if build_version = update_form.plist["CFBundleVersion"]
+      if build_version = form.plist["CFBundleVersion"]
         info_plist["CFBundleVersion"] = build_version
       end
       
@@ -265,18 +308,18 @@ module XcodeProject
       IO.write(plist_path, info_plist.to_plist)
     end
 
-    # headfile
-    if headfile_form = update_form.headfile
+    # handle headfile
+    if headfile_form = form.headfile
       headfile = HeadFile.load(File.join(project_path, target_configuration.headfile))
       distribution_hash = headfile["DISTRIBUTION"]
-      update_form.each do |key, value|
+      form.each do |key, value|
         distribution_hash[key] = value
       end
       HeadFile.dump(File.join(project_path, target_configuration.headfile), headfile)
     end
 
-    # build settings
-    if pbxproj_info = update_form.pbxproj
+    # handle xcode params
+    if pbxproj_info = form.pbxproj
       pbxproj_info.each do |key, value|
         target.build_configurations.each do |config|
           build_settings[key] = value
@@ -289,10 +332,8 @@ module XcodeProject
   end
 
   # create_target method do follow things for you
-  # 1. create target from template, copy build phase and build settings from template, 
-  #    igonre template's private build files. In addition, method will add a target's 
-  #    pre-preocess macro 
-  # 2. make private directory, create plist file and headerfile, In addition, create imagset.
+  # 1. create target from template, copy build phase and build settings, 
+  # 2. make private directory, plist file, headerfile and imagset.
   # 3. edit Podfile file, common config file
   #
   # @param [String] project_path
@@ -321,11 +362,11 @@ module XcodeProject
   #
   # @param [String] project_path
   # @param [String] company_code
-  # @param [Hash] update_form
+  # @param [Hash] form
   #
-  def XcodeProject.edit_project(project_path, company_code, update_form)
+  def XcodeProject.edit_project(project_path, company_code, form)
     app = App.find_app(company_code)
-    form = ProjectForm.new(update_form)
+    form = ProjectForm.new(form)
     configuration = TargetConfiguration.new(app.enterprise_configuration)
     edit_target(project_path, configuration, form)
   end

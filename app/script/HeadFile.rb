@@ -6,7 +6,7 @@ module HeadFile
     return Hash.new unless File.readable?(file_path)
 
     hash = Hash.new
-    dict = Hash["DEBUG" => Hash.new, "RELEASE" => Hash.new, "DISTRIBUTION" => Hash.new]
+    dict = { "DEBUG" => Hash.new, "RELEASE" => Hash.new, "DISTRIBUTION" => Hash.new }
     dict.each do |method, configuration|
       start = false
       IO.foreach(file_path) do |line|
