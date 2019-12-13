@@ -7,24 +7,32 @@ module MyUtils
   # @params [String] remote
   #         remote address
   #
-  def self.map_remote(data, remote)
+  def self.remote_file_path(data, remote)
     if data.instance_of? Hash
-      data.transform_values {|item| map_remote(item, remote) }
+      data.transform_values {|item| remote_file_path(item, remote) }
     elsif data.instance_of? Array
-      data.collect {|item| map_remote(item, remote) }
+      data.collect {|item| remote_file_path(item, remote) }
     elsif data.instance_of? String
       data.sub('#{domain}', remote)
     end
   end
 
+  # recover from http path
+  #
+  # @param [Hash|Array|String] data
+  #
   def self.recover_file_path(data)
     if data.instance_of? Hash
       data.transform_values { |item| recover_file_path(item) }
     elsif data.instance_of? Array
       data.collect { |item| recover_file_path(item) }
     elsif data.instance_of? String
-      filename = data.split('/').last
-      Rails.root.join('public', 'upload', filename)
+      if data.include? ":3000/file"
+        filename = data.split('/').last
+        Rails.root.join('public', 'upload', filename)
+      else
+        data
+      end
     end
   end
 

@@ -1,7 +1,8 @@
 {
   "pbxproj" : {
     "PRODUCT_BUNDLE_IDENTIFIER" : "",
-    "PROVISIONING_PROFILE_SPECIFIER" : ""
+    "PROVISIONING_PROFILE_SPECIFIER" : "",
+    "CODE_SIGN_IDENTITY" : ""
   },
   "plist" : {
     "CFBundleDisplayName" : "",

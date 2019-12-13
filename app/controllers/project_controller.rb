@@ -15,24 +15,23 @@ class ProjectController < ApplicationController
 
   # 新增分支及target
   def add_new_project
-    company_code = params["kCompanyCode"]
-    branch_name = "proj-#{company_code}-snapshot"
-    project_path = self.project_path
-    tag_name = params["tag"]
-
-    if branch = self.git.branches.find { |b| b.name == branch_name }
-      raise "branch #{branch_name} alread existed"
-    end
+    # company_code = params["kCompanyCode"]
+    # branch_name = "proj-#{company_code}-snapshot"
+    # tag_name = params["tag"]
     
-    if tag = self.git.tags.find { |t| t.name == tag_name }
-      raise "tag #{tag_name} is not existed" unless tag
-    end
+    # if tag = self.git.tags.find { |t| t.name == tag_name }
+    #   raise "tag #{tag_name} is not existed" unless tag
+    # end
 
-    cmd = "git --git-dir=#{self.project_path}/.git checkout -b #{branch_name} #{tag_name}"
-    exec cmd
-    raise "checkout new branch failed" if self.git.current_branch.name != branch_name
+    # cmd = "git --git-dir=#{self.project_path}/.git checkout -b #{branch_name} #{tag_name}"
+    # IO.popen(cmd) { |stdout|
+    #   puts stdout.read
+    # }
+    # if self.git.current_branch.name != branch_name
+    #   raise "checkout new branch failed"
+    # end
 
-    XcodeProject.new_target(project_path, params.as_json)
+    XcodeProject.new_target(self.project_path, params["configuration"], params["form"])
     
     render()
   end
@@ -66,7 +65,7 @@ class ProjectController < ApplicationController
   # 获取项目信息
   def fetch_project_info(project_path, target_configuration)
     data = XcodeProject.fetch_target_info(project_path, target_configuration)
-    MyUtils.map_remote(data, request.protocol + request.host_with_port)
+    MyUtils.remote_file_path(data, request.protocol + request.host_with_port)
   end
 
   # 获取目前所有APP
