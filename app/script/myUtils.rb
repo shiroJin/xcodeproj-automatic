@@ -29,7 +29,7 @@ module MyUtils
     elsif data.instance_of? String
       if data.include? ":3000/file"
         filename = data.split('/').last
-        Rails.root.join('public', 'upload', filename)
+        return Rails.root.join('public', 'upload', filename)
       else
         data
       end

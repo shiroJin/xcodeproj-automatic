@@ -6,13 +6,13 @@
     "enterprise" : {
       "targetName": "ButlerForTown",
       "privateGroup": "Butler/ButlerForTown",
-      "assets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
+      "imageAssets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
       "headfile": "Butler/ButlerForTown/SCAppConfigForTownButler.h"
     },
     "store" : {
       "targetName": "ButlerForRemainStore",
       "privateGroup": "Butler/ButlerForRemain",
-      "assets": "Butler/ButlerForRemain/ImageForTownButler.xcassets",
+      "imageAssets": "Butler/ButlerForRemain/ImageForTownButler.xcassets",
       "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButlerStore.h"
     }
   }, {
@@ -22,13 +22,13 @@
     "enterprise" : {
       "targetName": "ButlerForRemain",
       "privateGroup": "Butler/ButlerForRemain",
-      "assets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
+      "imageAssets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
       "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
     },
     "store" : {
       "targetName": "ButlerForRemainStore",
       "privateGroup": "Butler/ButlerForRemain",
-      "assets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
+      "imageAssets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
       "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButlerStore.h"
     }
   }

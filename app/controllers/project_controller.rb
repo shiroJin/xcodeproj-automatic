@@ -15,14 +15,13 @@ class ProjectController < ApplicationController
 
   # 新增分支及target
   def add_new_project
-    # company_code = params["kCompanyCode"]
-    # branch_name = "proj-#{company_code}-snapshot"
-    # tag_name = params["tag"]
-    
+    # branch_name = params[:branch]
+    # tag_name = params[:tag]
+
     # if tag = self.git.tags.find { |t| t.name == tag_name }
     #   raise "tag #{tag_name} is not existed" unless tag
     # end
-
+    
     # cmd = "git --git-dir=#{self.project_path}/.git checkout -b #{branch_name} #{tag_name}"
     # IO.popen(cmd) { |stdout|
     #   puts stdout.read
@@ -30,27 +29,10 @@ class ProjectController < ApplicationController
     # if self.git.current_branch.name != branch_name
     #   raise "checkout new branch failed"
     # end
-
-    XcodeProject.new_target(self.project_path, params["configuration"], params["form"])
     
-    render()
-  end
-
-  def add_new_target
-    repository, branch = '', 'proj-xyjnh-snapshot'
-
-    if current_branch = self.git.current_branch
-      unless current_branch.name == branch
-        Dir.chdir(project_path) do
-          cmd = "git checkout #{branch}"
-          IO.popen(cmd)
-        end
-      end
-      raise "error branch" unless self.git.current_branch == branch
-    end
+    args = MyUtils.recover_file_path(params.as_json)
+    XcodeProject.new_target(self.project_path, args["configuration"], args["form"])
     
-    XcodeProject.new_target(repository, params.as_json)
-
     render()
   end
 
@@ -58,7 +40,7 @@ class ProjectController < ApplicationController
   def edit_project
     update_form = params["form"]
     form = MyUtils.recover_file_path(update_form.as_json)
-    XcodeProject.edit_project(self.project_path, 'town', form)
+    XcodeProject.edit_project(self.project_path, 'mh', form)
     render()
   end
 

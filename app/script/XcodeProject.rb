@@ -31,6 +31,30 @@ module XcodeProject
       @store = hash["store"]
       @identify = hash["identify"]
     end
+
+  end
+
+  class URLType
+    attr_accessor :url_identify, :url_scheme
+
+    def initialize(hash={})
+      @url_identify = hash["identify"]
+      @url_scheme = hash["scheme"]
+    end
+
+    def load(hash)
+      @url_identify = hash["CFBundleURLName"]
+      @url_scheme = hash["CFBundleURLSchemes"].first
+    end
+
+    def to_hash
+      return {
+        "CFBundleTypeRole" => "Editor",
+        "CFBundleURLName" => @url_identify,
+        "CFBundleURLSchemes" => [@url_scheme]
+      }
+    end
+
   end
 
   IMAGE_ASSETS_EXT = ['imageset', 'appiconset', 'launchimage']
@@ -93,11 +117,11 @@ module XcodeProject
 
     if filepath && file
       dest = File.join(project_path, file.file_ref.full_path)
-      FileUtils.cp(filepath, dest)
+      FileUtils.cp(filepath, file.file_ref.full_path)
     end
 
     if filepath && !file
-      dest_path = File.join(project_path, pbxgroup.full_path, filename)
+      dest = File.join(pbxgroup.real_path, filename)
       FileUtils.cp(filepath, dest)
       file_ref = pbxgroup.new_reference(filename)
       pbxtarget.add_resources([file_ref])
@@ -216,7 +240,7 @@ module XcodeProject
     headfile_path = File.join(project.main_group.real_path, configuration.headfile)
     unless File.exist? headfile_path
       IO.write(headfile_path, '')
-      private_group.new_reference(configuration.headfile)
+      private_group.new_reference(configuration.headfile.split('/').last)
     end
     puts "Step 7: created private headfile: #{configuration.headfile}"
     
@@ -272,45 +296,19 @@ module XcodeProject
     end
 
     # info.plist
-    if plist = form.plist
+    if plist_form = form.plist
       build_settings = target.build_settings("Distribution")
       plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
-      info_plist = Plist.parse_xml(plist_path)
-
-      if display_name = form.plist["CFBundleDisplayName"]
-        info_plist["CFBundleDisplayName"] = form["CFBundleDisplayName"] 
-      end
-      if short_version = form.plist["CFBundleShortVersionString"]
-        info_plist["CFBundleShortVersionString"] = short_version
-      end
-      if build_version = form.plist["CFBundleVersion"]
-        info_plist["CFBundleVersion"] = build_version
-      end
-      
-      url_types = info_plist["CFBundleURLTypes"]
-      unless url_types
-        url_types = Array.new
-        info_plist["CFBundleURLTypes"] = url_types
-      end
-      types = { 'kWechatAppId' => 'wx', 
-                'kTencentQQAppId' => 'tencent', 
-                'PRODUCT_BUNDLE_IDENTIFIER' => 'product' }
-      types.map { |key, identify|
-        if scheme = target_configuration.headfile[key]
-          url_type = url_types.find { |item| item['CFBundleURLName'] == identify }
-          unless url_type
-            url_type = { 'CFBundleTypeRole' => 'Editor', 
-                        'CFBundleURLName' => identify, 
-                        'CFBundleURLSchemes' => Array.new }
-            url_types << url_type
-          end
-          if identify == 'tencent'
-            scheme = 'tencent' + scheme
-          end
-          url_type['CFBundleURLSchemes'] = Array[scheme]
+      plist = Plist.parse_xml(plist_path)
+      plist_form.map do |name, value|
+        if name == "urlTypes" && url_types = plist_form["urlTypes"]
+          url_types.map! { |item| URLType.new(item).to_hash }
+          plist["CFBundleURLTypes"] = url_types
+        else
+          plist[name] = value
         end
-      }
-      IO.write(plist_path, info_plist.to_plist)
+      end
+      IO.write(plist_path, plist.to_plist)
     end
 
     # handle headfile
@@ -404,6 +402,16 @@ module XcodeProject
     end
     if plist_info['CFBundleVersion'] == '$(CURRENT_PROJECT_VERSION)'
       plist_info['CFBundleVersion'] = build_settings['CURRENT_PROJECT_VERSION']
+    end
+
+    if url_types = info_plist["CFBundleURLTypes"]
+      url_types_info = Array.new
+      url_types.each do |dict|
+        item = URLType.new
+        item.load(dict)
+        url_types_info << {"identify" => item.url_identify, "scheme" => item.url_scheme}
+      end
+      plist_info["urlTypes"] = url_types_info
     end
     standard_form["plist"].merge!(plist_info)
 
