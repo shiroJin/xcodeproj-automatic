@@ -15,20 +15,30 @@ class ProjectController < ApplicationController
 
   # 新增分支及target
   def add_new_project
-    # branch_name = params[:branch]
-    # tag_name = params[:tag]
+    branch_name, tag_name = params[:branch], params[:tag]
 
-    # if tag = self.git.tags.find { |t| t.name == tag_name }
-    #   raise "tag #{tag_name} is not existed" unless tag
-    # end
+    arr, cmd = [], "git --git-dir=#{self.project_path}/.git branch -a"
+    IO.popen(cmd) { |stdout|
+      stdout.each { |b|
+        current = (b[0, 2] == '* ')
+        arr << b.gsub('* ', '').strip
+      }
+    }
+    exist = arr.find { |b| b.split('/').last == branch_name }
     
-    # cmd = "git --git-dir=#{self.project_path}/.git checkout -b #{branch_name} #{tag_name}"
-    # IO.popen(cmd) { |stdout|
-    #   puts stdout.read
-    # }
-    # if self.git.current_branch.name != branch_name
-    #   raise "checkout new branch failed"
-    # end
+    if exist
+      IO.popen("git --git-dir=#{self.project_path}/.git checkout #{branch_name}") { |std|
+        std.read
+      }
+    else
+      cmd = "git --git-dir=#{self.project_path}/.git checkout -b #{branch_name} #{tag_name}"
+      Open3.popen3(cmd) { |stdout| puts stdout.read }
+    end
+
+    # check branch
+    if self.git.current_branch.name != branch_name
+      raise "checkout new branch failed"
+    end
     
     args = MyUtils.recover_file_path(params.as_json)
     XcodeProject.new_target(self.project_path, args["configuration"], args["form"])
