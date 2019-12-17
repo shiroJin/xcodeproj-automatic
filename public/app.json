@@ -1,6 +1,6 @@
 [
   {
-    "id": 0,
+    "id": "0",
     "displayName": "测试使用",
     "branchName" : "rails",
     "configuration" : {
@@ -11,7 +11,7 @@
     }
   }, 
   {
-    "id": 1,
+    "id": "1",
     "displayName": "一米智服",
     "branchName" : "proj-mhsh-snapshot",
     "configuration" : {
@@ -22,7 +22,7 @@
     }
   }, 
   {
-    "id": 2,
+    "id": "2",
     "displayName": "一米智服Store",
     "branchName" : "proj-mhsh-snapshot",
     "configuration" : {
@@ -33,7 +33,7 @@
     }
   },
   {
-    "id": 3,
+    "id": "3",
     "displayName": "园区管理",
     "branchName": "proj-yz-snapshot",
     "configuration" : {
@@ -44,18 +44,18 @@
     }
   },
   {
-    "id": 4,
+    "id": "4",
     "displayName": "园区管理Store",
     "branchName": "proj-yz-snapshot",
     "configuration" : {
-      "targetName": "ButlerForRemainStore",
-      "privateGroup": "Butler/ButlerForRemain",
-      "imageAssets": "Butler/ButlerForRemain/ImageForTownButler.xcassets",
-      "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButlerStore.h"
+      "targetName": "ButlerForTownStore",
+      "privateGroup": "Butler/ButlerForTown",
+      "imageAssets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
+      "headfile": "Butler/ButlerForTown/SCAppConfigForTownButlerStore.h"
     }
   },
   {
-    "id": 5,
+    "id": "5",
     "displayName": "小镇管理",
     "branchName": "proj-zhwg-snapshot",
     "configuration": {
@@ -66,7 +66,7 @@
     }
   },
   {
-    "id": 6,
+    "id": "6",
     "displayName": "慧管理",
     "branchName": "proj-xyjnh-snapshot",
     "configuration": {

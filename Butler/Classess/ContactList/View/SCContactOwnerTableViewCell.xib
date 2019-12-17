@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14868" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14824"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" id="KGk-i7-Jjw" customClass="SCContactOwnerTableViewCell">
+            <rect key="frame" x="0.0" y="0.0" width="320" height="80"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KGk-i7-Jjw" id="H2p-sc-9uM">
+                <rect key="frame" x="0.0" y="0.0" width="320" height="80"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="KOO-kA-EhT">
+                        <rect key="frame" x="25" y="10" width="37.5" height="18"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="18" id="oPW-75-9vN"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                        <color key="textColor" red="0.20000000000000001" green="0.2666666667" blue="0.33333333329999998" alpha="1" colorSpace="calibratedRGB"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3kx-ll-oiS">
+                        <rect key="frame" x="25" y="31" width="253" height="20"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="20" id="qyk-Yc-vto"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                        <color key="textColor" red="0.50980392159999999" green="0.50980392159999999" blue="0.50980392159999999" alpha="1" colorSpace="calibratedRGB"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="xk8-wp-QlZ">
+                        <rect key="frame" x="25" y="51" width="253" height="20"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="20" id="9da-yw-Qf1"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                        <color key="textColor" red="0.50980392156862742" green="0.50980392156862742" blue="0.50980392156862742" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="contacts_phone" translatesAutoresizingMaskIntoConstraints="NO" id="aGJ-oE-jbY">
+                        <rect key="frame" x="283" y="29" width="22" height="22"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="22" id="A0F-Tg-9n4"/>
+                            <constraint firstAttribute="width" constant="22" id="BSo-Bz-Ovg"/>
+                        </constraints>
+                    </imageView>
+                </subviews>
+                <constraints>
+                    <constraint firstAttribute="trailing" secondItem="aGJ-oE-jbY" secondAttribute="trailing" constant="15" id="AJm-oG-5G2"/>
+                    <constraint firstItem="3kx-ll-oiS" firstAttribute="top" secondItem="KOO-kA-EhT" secondAttribute="bottom" constant="3" id="Iac-tm-2d2"/>
+                    <constraint firstItem="KOO-kA-EhT" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="25" id="U76-vT-xh9"/>
+                    <constraint firstItem="KOO-kA-EhT" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" constant="10" id="U9m-Yr-3IQ"/>
+                    <constraint firstItem="xk8-wp-QlZ" firstAttribute="trailing" secondItem="3kx-ll-oiS" secondAttribute="trailing" id="d7n-e0-Bgu"/>
+                    <constraint firstItem="xk8-wp-QlZ" firstAttribute="leading" secondItem="3kx-ll-oiS" secondAttribute="leading" id="eE6-zo-wOq"/>
+                    <constraint firstItem="3kx-ll-oiS" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="25" id="fbZ-om-mbe"/>
+                    <constraint firstAttribute="trailing" secondItem="3kx-ll-oiS" secondAttribute="trailing" constant="42" id="gHR-dD-6Ur"/>
+                    <constraint firstItem="aGJ-oE-jbY" firstAttribute="centerY" secondItem="H2p-sc-9uM" secondAttribute="centerY" id="sKr-3I-t1l"/>
+                    <constraint firstItem="xk8-wp-QlZ" firstAttribute="top" secondItem="3kx-ll-oiS" secondAttribute="bottom" id="siE-zN-E50"/>
+                </constraints>
+            </tableViewCellContentView>
+            <connections>
+                <outlet property="addressLbl" destination="3kx-ll-oiS" id="j31-iz-pYA"/>
+                <outlet property="nameLbl" destination="KOO-kA-EhT" id="qyB-dk-t04"/>
+                <outlet property="secondAddressLbl" destination="xk8-wp-QlZ" id="z5V-3V-jD3"/>
+            </connections>
+            <point key="canvasLocation" x="139" y="116"/>
+        </tableViewCell>
+    </objects>
+    <resources>
+        <image name="contacts_phone" width="22" height="22"/>
+    </resources>
+</document>

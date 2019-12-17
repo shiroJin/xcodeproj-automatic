@@ -2,6 +2,7 @@ require_relative '../script/app'
 require_relative '../script/XcodeProject'
 require_relative '../script/myUtils'
 require 'git'
+require 'open3'
 
 class ProjectController < ApplicationController
 
@@ -54,8 +55,8 @@ class ProjectController < ApplicationController
     render()
   end
 
-  # 获取项目信息
-  def fetch_project_info(project_path, target_configuration)
+  # 读取项目信息
+  def read_project_info(project_path, target_configuration)
     data = XcodeProject.fetch_target_info(project_path, target_configuration)
     MyUtils.remote_file_path(data, request.protocol + request.host_with_port)
   end
@@ -74,8 +75,20 @@ class ProjectController < ApplicationController
   # 获取当前项目
   def fetch_current_project
     app = App.find_app_with_branch(self.git.current_branch)
-    data = self.fetch_project_info(self.project_path, app.configuration)
-    render :json => data
+    self.read_project_info(self.project_path, app.configuration)
+  end
+
+  # 获取项目信息
+  def fetch_project_info
+    id = params[:id]
+    result = nil
+    if id == ""
+      result = fetch_current_project
+    else
+      app = App.find_app(id)
+      result = read_project_info(self.project_path, app.configuration)
+    end
+    render :json => result
   end
 
   # 获取所有tag
@@ -94,9 +107,9 @@ class ProjectController < ApplicationController
       render :text => 'worktree is dirty!'
     else
       app = App.find_app(params[:id])
-      cmd = "git --git-dir=#{self.project_path}/.git checkout #{app.branch_name}"
-      IO.popen(cmd) { |result|
-        render :json => { :msg => result.read }
+      cmd = "git checkout #{app.branch_name}"
+      Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
+        render :json => { :msg => o.read }
       }
     end
   end
@@ -104,8 +117,8 @@ class ProjectController < ApplicationController
   #下拉代码
   def pull
     cmd = "git --git-dir=#{self.project_path}/.git pull 2>&1"
-    IO.popen(cmd) { |result|
-      render :json => { :msg => result.read }
+    Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
+      render :json => { :msg => o.read }
     }
   end
 

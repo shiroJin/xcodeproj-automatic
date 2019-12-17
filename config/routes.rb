@@ -8,7 +8,6 @@ Rails.application.routes.draw do
   get 'project/list', to: 'project#fetch_project_list'
   get 'project/app-form', to: 'project#fetch_project_form'
   get 'project/projectInfo', to: 'project#fetch_project_info'
-  get 'project/current', to: 'project#fetch_current_project'
   get 'project/repositoryInfo', to: 'project#get_repository_info'
   post 'project/addProject', to: 'project#add_new_project'
   post 'project/editProject', to: 'project#edit_project'
