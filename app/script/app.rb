@@ -3,20 +3,18 @@ require 'json'
 module App
 
   class AppItem
-    attr_reader :display_name, :branch_name, :company_code, :enterprise_configuration, :store_configuration
-    
+    attr_accessor :display_name, :branch_name, :id, :configuration
     def initialize(hash)
       @display_name = hash["displayName"]
       @branch_name = hash["branchName"]
-      @company_code = hash["code"]
-      @enterprise_configuration = hash['enterprise']
-      @store_configuration = hash['store']
+      @id = hash["id"]
+      @configuration = hash['configuration']
     end
   end
 
-  def self.find_app(company_code)
+  def self.find_app(id)
     app_list = JSON.load(Rails.root.join('public', 'app.json'))
-    app_hash = app_list.find{ |hash| hash["code"] == company_code }
+    app_hash = app_list.find{ |hash| hash["id"] == id }
     unless app_hash
       return nil
     end

@@ -74,18 +74,17 @@ class ProjectController < ApplicationController
   # 获取当前项目
   def fetch_current_project
     app = App.find_app_with_branch(self.git.current_branch)
-    data = self.fetch_project_info(self.project_path, app.enterprise_configuration)
+    data = self.fetch_project_info(self.project_path, app.configuration)
     render :json => data
   end
 
   # 获取所有tag
   def fetch_avaiable_tags
     data = self.git.tags.select do |tag|
-      tag.name =~ /^Fusion_1.\d+.[^0]$/
+      tag.name =~ /^Fusion_1.1\d+.[^0]$/
     end.map do |tag|
       tag.name
     end
-    return data
   end
 
   #切换项目
@@ -93,13 +92,13 @@ class ProjectController < ApplicationController
     if worktree_is_dirty
       response.status = 400
       render :text => 'worktree is dirty!'
-      return
+    else
+      app = App.find_app(params[:id])
+      cmd = "git --git-dir=#{self.project_path}/.git checkout #{app.branch_name}"
+      IO.popen(cmd) { |result|
+        render :json => { :msg => result.read }
+      }
     end
-
-    app = App.find_app(params["companyCode"])
-    branch = self.git.branches.find{ |b| b.name == app.branch_name }
-    branch.checkout
-    render()
   end
 
   #下拉代码
