@@ -2,31 +2,31 @@
   {
     "id": "0",
     "displayName": "测试使用",
-    "branchName" : "rails",
-    "configuration" : {
-      "targetName": "ButlerForRemain",
+    "branchName": "rails",
+    "configuration": {
+      "target": "ButlerForRemain",
       "privateGroup": "Butler/ButlerForRemain",
       "imageAssets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
       "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
     }
-  }, 
+  },
   {
     "id": "1",
     "displayName": "一米智服",
-    "branchName" : "proj-mhsh-snapshot",
-    "configuration" : {
-      "targetName": "ButlerForRemain",
+    "branchName": "proj-mhsh-snapshot",
+    "configuration": {
+      "target": "ButlerForRemain",
       "privateGroup": "Butler/ButlerForRemain",
       "imageAssets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
       "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButler.h"
     }
-  }, 
+  },
   {
     "id": "2",
     "displayName": "一米智服Store",
-    "branchName" : "proj-mhsh-snapshot",
-    "configuration" : {
-      "targetName": "ButlerForRemainStore",
+    "branchName": "proj-mhsh-snapshot",
+    "configuration": {
+      "target": "ButlerForRemainStore",
       "privateGroup": "Butler/ButlerForRemain",
       "imageAssets": "Butler/ButlerForRemain/ImageForRemainButler.xcassets",
       "headfile": "Butler/ButlerForRemain/SCAppConfigForRemainButlerStore.h"
@@ -36,8 +36,8 @@
     "id": "3",
     "displayName": "园区管理",
     "branchName": "proj-yz-snapshot",
-    "configuration" : {
-      "targetName": "ButlerForTown",
+    "configuration": {
+      "target": "ButlerForTown",
       "privateGroup": "Butler/ButlerForTown",
       "imageAssets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
       "headfile": "Butler/ButlerForTown/SCAppConfigForTownButler.h"
@@ -47,8 +47,8 @@
     "id": "4",
     "displayName": "园区管理Store",
     "branchName": "proj-yz-snapshot",
-    "configuration" : {
-      "targetName": "ButlerForTownStore",
+    "configuration": {
+      "target": "ButlerForTownStore",
       "privateGroup": "Butler/ButlerForTown",
       "imageAssets": "Butler/ButlerForTown/ImageForTownButler.xcassets",
       "headfile": "Butler/ButlerForTown/SCAppConfigForTownButlerStore.h"
@@ -59,7 +59,7 @@
     "displayName": "小镇管理",
     "branchName": "proj-zhwg-snapshot",
     "configuration": {
-      "targetName": "ButlerForZhwg",
+      "target": "ButlerForZhwg",
       "privateGroup": "Butler/ButlerForZhwg",
       "imageAssets": "Butler/ButlerForZhwg/ImageForZhwgButler.xcassets",
       "headfile": "Butler/ButlerForZhwg/SCAppConfigForZhwgButler.h"
@@ -70,10 +70,23 @@
     "displayName": "慧管理",
     "branchName": "proj-xyjnh-snapshot",
     "configuration": {
-      "targetName": "Butler",
+      "target": "Butler",
       "privateGroup": "Butler/Butler",
       "imageAssets": "Butler/Butler/ImageForButler.xcassets",
       "headfile": "Butler/Butler/SCAppConfig.h"
     }
+  },
+  {
+    "configuration": {
+      "target": "rails",
+      "identify": "rs",
+      "store": null,
+      "privateGroup": "Butler/rails",
+      "imageAssets": "Butler/rails/rails.xcassets",
+      "headfile": "Butler/rails/rails.h"
+    },
+    "branchName": "test-rails",
+    "displayName": "吃好喝好",
+    "id": "7"
   }
 ]

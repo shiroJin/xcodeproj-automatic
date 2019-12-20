@@ -27,7 +27,7 @@ module XcodeProject
       @private_group = hash["privateGroup"]
       @image_assets = hash["imageAssets"]
       @headfile = hash["headfile"]
-      @target = hash["targetName"]
+      @target = hash["target"]
       @store = hash["store"]
       @identify = hash["identify"]
     end
@@ -291,7 +291,9 @@ module XcodeProject
     # handle file resource
     if files = form.files
       files.map do |name, path|
-        target_add_resouce(project_path, target, name, path, private_group)
+        if path.length > 0
+          target_add_resouce(project_path, target, name, path, private_group)
+        end
       end
     end
 
@@ -360,10 +362,9 @@ module XcodeProject
   # @param [String] company_code
   # @param [Hash] form
   #
-  def XcodeProject.edit_project(project_path, company_code, form)
-    app = App.find_app(company_code)
+  def XcodeProject.edit_project(project_path, configuration, form)
     form = ProjectForm.new(form)
-    configuration = TargetConfiguration.new(app.enterprise_configuration)
+    configuration = TargetConfiguration.new(configuration)
     edit_target(project_path, configuration, form)
   end
 

@@ -28,30 +28,33 @@ class ProjectController < ApplicationController
     exist = arr.find { |b| b.split('/').last == branch_name }
     
     if exist
-      IO.popen("git --git-dir=#{self.project_path}/.git checkout #{branch_name}") { |std|
-        std.read
+      cmd = "git checkout #{branch_name}"
+      Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
+        puts o.read
       }
     else
-      cmd = "git --git-dir=#{self.project_path}/.git checkout -b #{branch_name} #{tag_name}"
-      Open3.popen3(cmd) { |stdout| puts stdout.read }
+      cmd = "git checkout -b #{branch_name} #{tag_name}"
+      Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
+        puts o.read
+      }
     end
 
     # check branch
-    if self.git.current_branch.name != branch_name
+    if self.git.current_branch != branch_name
       raise "checkout new branch failed"
     end
-    
     args = MyUtils.recover_file_path(params.as_json)
     XcodeProject.new_target(self.project_path, args["configuration"], args["form"])
-    
+    App.add_app({ "configuration" => args["configuration"], "branchName" => branch_name, "displayName" => args["form"]["plist"]["CFBundleDisplayName"] })
     render()
   end
 
   # 编辑项目
   def edit_project
+    app = App.find_app(params["id"])
     update_form = params["form"]
     form = MyUtils.recover_file_path(update_form.as_json)
-    XcodeProject.edit_project(self.project_path, 'mh', form)
+    XcodeProject.edit_project(self.project_path, app.configuration, form)
     render()
   end
 
@@ -75,25 +78,19 @@ class ProjectController < ApplicationController
   # 获取当前项目
   def fetch_current_project
     app = App.find_app_with_branch(self.git.current_branch)
-    self.read_project_info(self.project_path, app.configuration)
+    render :json => { :id => app.id }
   end
 
   # 获取项目信息
   def fetch_project_info
-    id = params[:id]
-    result = nil
-    if id == ""
-      result = fetch_current_project
-    else
-      app = App.find_app(id)
-      result = read_project_info(self.project_path, app.configuration)
-    end
+    app = App.find_app(params[:id])
+    result = read_project_info(self.project_path, app.configuration)
     render :json => result
   end
 
   # 获取所有tag
   def fetch_avaiable_tags
-    data = self.git.tags.select do |tag|
+    self.git.tags.select do |tag|
       tag.name =~ /^Fusion_1.1\d+.[^0]$/
     end.map do |tag|
       tag.name
@@ -103,8 +100,7 @@ class ProjectController < ApplicationController
   #切换项目
   def checkout_app
     if worktree_is_dirty
-      response.status = 400
-      render :text => 'worktree is dirty!'
+      render :json => { :msg => "请先提交内容修改！"}
     else
       app = App.find_app(params[:id])
       cmd = "git checkout #{app.branch_name}"
@@ -123,14 +119,19 @@ class ProjectController < ApplicationController
   end
 
   def worktree_is_dirty
-    cmd = "git --git-dir=#{self.project_path}/.git --work-tree=#{self.project_path} status"
-    IO.popen(cmd) { |result|
-      message = result.read
-      dirty = false
-      if message.index('Untracked files') || message.index('Changes not staged')
-        dirty = true
-      end
-      return dirty
+    dirty = false
+    message = self.repository_status
+    if message.index('Untracked files') || message.index('Changes not staged')
+      dirty = true
+    end
+    return dirty
+  end
+
+  def repository_status
+    cmd = "git status"
+    Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
+      message = o.read
+      return message
     }
   end
 
@@ -158,9 +159,10 @@ class ProjectController < ApplicationController
 
   def get_repository_info
     dirty = self.worktree_is_dirty
+    status = self.repository_status
     tags = self.fetch_avaiable_tags
     project_list = self.fetch_project_list
-    data = { :dirty => dirty, :tags => tags, :project_list => project_list }
+    data = { :dirty => dirty, :tags => tags, :project_list => project_list, :status => status }
     render :json => data
   end
 
