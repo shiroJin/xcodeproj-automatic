@@ -15,8 +15,7 @@ Rails.application.routes.draw do
 
   #worktree command
   post 'project/checkout', to: 'project#checkout_app'
-  post 'project/pull', to: 'project#pull'
-  post 'project/pullCurrent', to: 'project#pull_single_branch'
+  post 'project/pull', to: 'project#repository_pull'
   post 'project/clean', to: 'project#stash'
   post 'project/commit', to: 'project#commit'
   post 'project/merge', to: 'project#merge'

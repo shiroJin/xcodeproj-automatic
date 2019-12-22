@@ -112,7 +112,7 @@ class ProjectController < ApplicationController
 
   #下拉代码
   def pull
-    cmd = "git --git-dir=#{self.project_path}/.git pull 2>&1"
+    cmd = "git pull 2>&1"
     Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
       render :json => { :msg => o.read }
     }
@@ -152,9 +152,14 @@ class ProjectController < ApplicationController
     render()
   end
 
-  def pull_single_branch
-    self.git.pull('origin', self.git.current_branch)
-    render()
+  def repository_pull
+    cmd = "git pull"
+    stdout, stderr = nil
+    Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
+      stdout = o.read
+      stderr = e.read
+    }
+    render :json => { :stdout => stdout, :stderr => stderr }
   end
 
   def get_repository_info
