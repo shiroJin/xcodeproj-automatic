@@ -2,13 +2,19 @@
   "pbxproj" : {
     "PRODUCT_BUNDLE_IDENTIFIER" : "",
     "PROVISIONING_PROFILE_SPECIFIER" : "",
-    "CODE_SIGN_IDENTITY" : ""
+    "CODE_SIGN_IDENTITY" : "",
+    "DEVELOPMENT_TEAM" : ""
   },
   "plist" : {
     "CFBundleDisplayName" : "",
     "CFBundleShortVersionString" : "",
     "CFBundleVersion" : "",
     "urlTypes" : []
+  },
+  "entitlements" : {
+    "aps-environment" : "",
+    "com.apple.developer.associated-domains" : [],
+    "com.apple.security.application-groups" : []
   },
   "headfile" : {
     "kDistributioneBaseCommonUrl" : "",
@@ -27,7 +33,9 @@
     "kAppUpdateUrl" : "",
     "kAPISalt" : "",
     "kAPIVersion" : "",
-    "kCompanyCode" : ""  
+    "kCompanyCode" : "",
+    "kWechatUniversalLink": "",
+    "kQQUniversalLink": ""
   },
   "imageAssets" : {
     "AppIcon" : [],

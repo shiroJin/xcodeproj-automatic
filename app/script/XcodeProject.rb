@@ -7,13 +7,19 @@ require_relative './ImageAsset'
 
 module XcodeProject
 
+  CODE_SIGN_ENTITLEMENTS = 'CODE_SIGN_ENTITLEMENTS'
+  APS_ENVIRONMENT = 'aps-environment'
+  ASSOCIATED_DOMAINS = 'com.apple.developer.associated-domains'
+  APPLICATION_GROUPS = 'com.apple.security.application-groups'
+
   class ProjectForm
-    attr_accessor :pbxproj, :plist, :headfile, :image_assets, :files
+    attr_accessor :pbxproj, :plist, :headfile, :image_assets, :files, :entitlements
 
     def initialize(hash)
       @pbxproj = hash["pbxproj"]
       @plist = hash["plist"]
       @headfile = hash["headfile"]
+      @entitlements = hash["entitlements"]
       @image_assets = hash["imageAssets"]
       @files = hash["files"]
     end
@@ -243,10 +249,24 @@ module XcodeProject
       private_group.new_reference(configuration.headfile.split('/').last)
     end
     puts "Step 7: created private headfile: #{configuration.headfile}"
+
+    entitlements_name = "#{configuration.target}.entitlements"
+    entitlements_content = {
+      'aps-environment' => 'development'
+    }
+    entitlements_path = File.join(configuration.private_group, entitlements_name)
+    entitlements_absolute_path = File.join(project.main_group.real_path, entitlements_path)
+    puts entitlements_absolute_path
+    private_group.new_reference(entitlements_name)
+    if not File.exist? entitlements_absolute_path
+      File.write(entitlements_absolute_path, entitlements_content.to_plist)
+    end
+    puts "Step 8: create entitlements #{entitlements_name}"
     
     target.build_configurations.each do |config|
       build_settings = config.build_settings
       build_settings["INFOPLIST_FILE"] = File.join('$(SRCROOT)', configuration.private_group, plist_name)
+      build_settings[CODE_SIGN_ENTITLEMENTS] = entitlements_path
       preprocess_defs = ["$(inherited)"]
       if config.name == 'Release'
         preprocess_defs << "RELEASE=1"
@@ -257,7 +277,7 @@ module XcodeProject
       if configuration.store
         preprocess_defs << "STORE=1"
       end
-      build_settings["GCC_PREPROCESSOR_DEFINITIONS"] = preprocess_defs
+      build_settings["GCC_PREPROCESSOR_DEFINITIONS"] = preprocess_defs  
     end
     
     podfile_add_target(project_path, configuration.identify)
@@ -327,11 +347,38 @@ module XcodeProject
       HeadFile.dump(File.join(project_path, target_configuration.headfile), headfile)
     end
 
-    # handle xcode params
+    # hanlde entitlements
+    if entitlements_form = form.entitlements
+      build_settings = target.build_settings('Distribution')
+      entitlements_path = File.join(project.main_group.real_path, build_settings[CODE_SIGN_ENTITLEMENTS])
+      entitlements = Plist.parse_xml(entitlements_path)
+      entitlements_form.each do |key ,value|
+        case key
+        when APS_ENVIRONMENT
+          entitlements[APS_ENVIRONMENT] = entitlements_form[APS_ENVIRONMENT]
+        when ASSOCIATED_DOMAINS
+          entitlements[ASSOCIATED_DOMAINS] = entitlements_form[ASSOCIATED_DOMAINS].split(',')
+        when APPLICATION_GROUPS
+          entitlements[APPLICATION_GROUPS] = entitlements_form[APPLICATION_GROUPS].split(',')
+        else
+          entitlements[key] = entitlements_form[key]
+        end
+      end
+      File.write(entitlements_path, entitlements.to_plist)
+    end
+
+    # handle build settings
     if pbxproj_info = form.pbxproj
       pbxproj_info.each do |key, value|
         target.build_configurations.each do |config|
-          config.build_settings[key] = value
+          if key == 'CODE_SIGN_IDENTITY'
+            if config.name == 'Distribution'
+              config.build_settings[key] = value
+              config.build_settings['CODE_SIGN_IDENTITY[sdk=iphoneos*]'] = value
+            end
+          else
+            config.build_settings[key] = value
+          end
         end
       end
     end
@@ -386,18 +433,27 @@ module XcodeProject
     pbxproj_info["PRODUCT_BUNDLE_IDENTIFIER"] = build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
     pbxproj_info["CODE_SIGN_IDENTITY"] = build_settings['CODE_SIGN_IDENTITY']
     pbxproj_info['PROVISIONING_PROFILE_SPECIFIER'] = build_settings['PROVISIONING_PROFILE_SPECIFIER']
+    pbxproj_info['DEVELOPMENT_TEAM'] = build_settings['DEVELOPMENT_TEAM']
     standard_form["pbxproj"].merge!(pbxproj_info)
 
+    # entitlements
+    entitlements_path = File.join(proj.main_group.real_path, build_settings[CODE_SIGN_ENTITLEMENTS])
+    entitlements = Plist.parse_xml(entitlements_path)
+    standard_form['entitlements'].merge!(entitlements)
+
     # plist information
-    plist_info = Hash.new
+    plist_info = {}
     plist_path = build_settings["INFOPLIST_FILE"].gsub('$(SRCROOT)', project_path)
     info_plist = Plist.parse_xml(plist_path)
-    fields =['CFBundleDisplayName', 'CFBundleShortVersionString', 'CFBundleVersion']
-    fields.each do |field|
+    [
+      'CFBundleDisplayName',
+      'CFBundleShortVersionString', 
+      'CFBundleVersion'
+    ].each do |field| 
       plist_info[field] = info_plist[field]
     end
-    # in xcode 11, CFBundleShortVersionString may get $(MARKETING_VERSION), CFBundleVersion get
-    # $(CURRENT_PROJECT_VERSION)
+
+    # in xcode 11, CFBundleShortVersionString may get $(MARKETING_VERSION), CFBundleVersion get $(CURRENT_PROJECT_VERSION)
     if plist_info['CFBundleShortVersionString'] == '$(MARKETING_VERSION)'
       plist_info['CFBundleShortVersionString'] = build_settings['MARKETING_VERSION']
     end
@@ -405,6 +461,7 @@ module XcodeProject
       plist_info['CFBundleVersion'] = build_settings['CURRENT_PROJECT_VERSION']
     end
 
+    # url types handle
     if url_types = info_plist["CFBundleURLTypes"]
       url_types_info = Array.new
       url_types.each do |dict|

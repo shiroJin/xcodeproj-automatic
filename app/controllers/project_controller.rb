@@ -44,8 +44,18 @@ class ProjectController < ApplicationController
       raise "checkout new branch failed"
     end
     args = MyUtils.recover_file_path(params.as_json)
-    XcodeProject.new_target(self.project_path, args["configuration"], args["form"])
-    App.add_app({ "configuration" => args["configuration"], "branchName" => branch_name, "displayName" => args["form"]["plist"]["CFBundleDisplayName"] })
+    begin
+      XcodeProject.new_target(self.project_path, args["configuration"], args["form"])
+    rescue => exception
+      cmd = "git add . && git reset --hard HEAD"
+      puts cmd
+      Open3.popen3(cmd, :chdir=>self.project_path) { |i, o, e, t|
+        o.each { |line| print line }
+        e.each { |line| print line }
+      }
+      throw exception
+    end
+    # App.add_app({ "configuration" => args["configuration"], "branchName" => branch_name, "displayName" => args["form"]["plist"]["CFBundleDisplayName"] })
     render()
   end
 
